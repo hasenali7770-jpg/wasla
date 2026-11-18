@@ -24,7 +24,9 @@ jobs:
           lint: true
           format: false
           # On pull requests buf-action also checks for breaking changes
-          # against the base branch (its default behaviour).
+          # against the base branch (its default behaviour). Results show in
+          # the job log; no PR comment (the CI token is read-only).
+          pr_comment: false
           push: false
       - uses: actions/setup-go@v6
         with:
