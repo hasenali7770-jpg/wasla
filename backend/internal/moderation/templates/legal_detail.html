@@ -1,0 +1,61 @@
+{{define "title"}}طلب رسمي {{.L.ID}}{{end}}
+{{define "content"}}
+{{$csrf := .Session.CSRF}}{{$id := .L.ID}}{{$open := eq .L.Status 1}}
+<p><a href="/admin/legal">← كل الطلبات</a></p>
+<h1>طلب رسمي رقم {{.L.ID}} — {{legalStatus .L.Status}}</h1>
+<section class="card">
+  <dl class="grid">
+    <dt>الجهة</dt><dd><bdi>{{.L.Authority}}</bdi></dd>
+    <dt>رقم الكتاب</dt><dd dir="ltr">{{.L.ReferenceNo}}</dd>
+    <dt>النوع</dt><dd>{{legalType .L.Type}}</dd>
+    <dt>تاريخ الورود</dt><dd>{{ts .L.ReceivedAt}}</dd>
+    <dt>المهلة</dt><dd>{{tsp .L.DueAt}}</dd>
+    <dt>سجّله</dt><dd>{{.L.CreatedBy}}</dd>
+    <dt>نص الطلب</dt><dd class="msg"><bdi>{{.L.Description}}</bdi></dd>
+    <dt>المراجعة القانونية</dt><dd class="msg">{{if .L.LegalReview}}<bdi>{{.L.LegalReview}}</bdi>{{else}}<span class="alert-inline">لم تُسجَّل مراجعة قانونية بعد</span>{{end}}</dd>
+    {{if .L.Response}}<dt>الرد</dt><dd class="msg"><bdi>{{.L.Response}}</bdi></dd>{{end}}
+  </dl>
+</section>
+<h2>الأهداف</h2>
+{{if .Targets}}
+{{range .Targets}}
+<section class="card">
+  {{if .UserID}}<p>مستخدم <a href="/admin/users/{{.UserID}}">{{.UserID}}</a></p>
+  {{else if .Seqs}}<p>رسائل {{joinInts .Seqs}} في المحادثة {{.ChatID}}</p>
+  {{else}}<p>المحادثة {{.ChatID}}</p>{{end}}
+  {{if $open}}
+  <form method="post" action="/admin/legal/{{$id}}/action">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <input type="hidden" name="user_id" value="{{.UserID}}"><input type="hidden" name="chat_id" value="{{.ChatID}}">
+    <input type="hidden" name="seqs" value="{{joinInts .Seqs}}">
+    {{if .UserID}}<input type="hidden" name="action" value="ban_user">
+      <select name="duration"><option value="7d">7 أيام</option><option value="30d">30 يوماً</option><option value="perm">دائم</option></select>
+    {{else if .Seqs}}<input type="hidden" name="action" value="delete_messages">
+    {{else}}<input type="hidden" name="action" value="ban_chat">{{end}}
+    <input name="reason" required minlength="3" placeholder="السبب">
+    <button class="danger">تنفيذ</button>
+  </form>
+  {{end}}
+</section>
+{{end}}
+{{else}}<p class="muted">لم تُحدَّد أهداف.</p>{{end}}
+<h2>الإجراءات المنفَّذة</h2>
+{{template "actions" .Actions}}
+{{if $open}}
+<section class="card">
+  <h2>إغلاق الطلب</h2>
+  <form method="post" action="/admin/legal/{{$id}}/close">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>النتيجة <select name="status"><option value="2">تم التنفيذ</option><option value="3">تنفيذ جزئي</option><option value="4">مرفوض لعدم كفاية السند القانوني</option></select></label>
+    <label>المراجعة القانونية <textarea name="legal_review" rows="3">{{.L.LegalReview}}</textarea></label>
+    <label>الرد المرسل إلى الجهة <textarea name="response" required rows="3"></textarea></label>
+    <button>إغلاق</button>
+  </form>
+</section>
+{{end}}
+{{end}}
+{{define "actions"}}
+{{if .}}<table><thead><tr><th>التاريخ</th><th>الإجراء</th><th>المشرف</th><th>السبب</th></tr></thead><tbody>
+{{range .}}<tr><td>{{ts .CreatedAt}}</td><td>{{action .Action}}</td><td>{{.Staff}}</td><td><bdi>{{.Reason}}</bdi></td></tr>{{end}}
+</tbody></table>{{else}}<p class="muted">لا يوجد.</p>{{end}}
+{{end}}

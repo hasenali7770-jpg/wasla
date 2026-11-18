@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{block "title" .}}لوحة الإشراف{{end}} · وصلة</title>
+<link rel="stylesheet" href="/admin/static/admin.css">
+</head>
+<body>
+{{with .Session}}
+<header class="top">
+  <strong>وصلة · الإشراف</strong>
+  <nav>
+    <a href="/admin/">طابور المراجعة</a>
+    {{if ge .Staff.Role 3}}<a href="/admin/legal">طلبات الجهات الرسمية</a>{{end}}
+    <a href="/admin/blocklist">قائمة الوسائط المحظورة</a>
+    <a href="/admin/audit">سجل الإجراءات</a>
+  </nav>
+  <form method="post" action="/admin/logout" class="inline">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <span class="muted">{{.Staff.Name}}</span>
+    <button class="link">خروج</button>
+  </form>
+</header>
+{{end}}
+<main>{{template "content" .}}</main>
+</body>
+</html>

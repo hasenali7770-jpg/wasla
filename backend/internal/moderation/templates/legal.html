@@ -1,0 +1,29 @@
+{{define "title"}}طلبات الجهات الرسمية{{end}}
+{{define "content"}}
+{{$csrf := .Session.CSRF}}
+<h1>طلبات الجهات الرسمية</h1>
+<p class="muted">كل طلب يُراجَع قانونياً قبل التنفيذ، وكل إجراء مرتبط به يُسجَّل.</p>
+{{if .Requests}}
+<table><thead><tr><th>#</th><th>الجهة</th><th>رقم الكتاب</th><th>النوع</th><th>الحالة</th><th>تاريخ الورود</th><th>المهلة</th></tr></thead><tbody>
+{{range .Requests}}
+<tr><td><a href="/admin/legal/{{.ID}}">{{.ID}}</a></td><td><bdi>{{.Authority}}</bdi></td><td dir="ltr">{{.ReferenceNo}}</td>
+<td>{{legalType .Type}}</td><td>{{legalStatus .Status}}</td><td>{{ts .ReceivedAt}}</td><td>{{tsp .DueAt}}</td></tr>
+{{end}}
+</tbody></table>
+{{else}}<p class="empty">لا توجد طلبات.</p>{{end}}
+<section class="card">
+  <h2>تسجيل طلب جديد</h2>
+  <form method="post" action="/admin/legal">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>الجهة <input name="authority" required placeholder="هيئة الإعلام والاتصالات / محكمة..."></label>
+    <label>رقم الكتاب الرسمي <input name="reference" dir="ltr"></label>
+    <label>النوع <select name="type"><option value="1">إزالة محتوى</option><option value="2">إيقاف حساب</option><option value="3">طلب بيانات مستخدم</option></select></label>
+    <label>المهلة <input type="date" name="due"></label>
+    <label>نص الطلب <textarea name="description" required rows="4"></textarea></label>
+    <label>الأهداف (سطر لكل هدف: <code dir="ltr">user 123</code> أو <code dir="ltr">chat 456</code> أو <code dir="ltr">message 456 12,13</code>)
+      <textarea name="targets" rows="4" dir="ltr"></textarea></label>
+    <label>ملاحظات المراجعة القانونية <textarea name="legal_review" rows="3"></textarea></label>
+    <button>حفظ</button>
+  </form>
+</section>
+{{end}}

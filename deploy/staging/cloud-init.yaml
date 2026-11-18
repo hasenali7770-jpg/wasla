@@ -1,0 +1,61 @@
+#cloud-config
+# Wasla staging server, first-boot setup (Ubuntu 24.04).
+# Paste this whole file into "Cloud config" (Hetzner) or "User data"
+# (DigitalOcean) when creating the server. See docs/staging-setup.md.
+#
+# It installs Docker, opens only ports 22/80/443, creates a "deploy" user that
+# GitHub Actions logs in as (key-only, no passwords), and generates the
+# staging secrets once in /opt/wasla/.env.
+
+package_update: true
+package_upgrade: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+
+users:
+  - default
+  - name: deploy
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      # Public half of the GitHub Actions deploy key (private half is the
+      # STAGING_SSH_KEY repository secret). Safe to publish.
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJs0BBC3uOV4/MwYFdve9fBYXaurYqHC1gNIvbzzHjJl wasla-staging-deploy
+
+ssh_pwauth: false
+disable_root: true
+
+swap:
+  filename: /swapfile
+  size: 2G
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/90-wasla.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+
+runcmd:
+  - systemctl enable --now docker
+  - usermod -aG docker deploy
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow OpenSSH
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
+  - mkdir -p /opt/wasla
+  - |
+    if [ ! -f /opt/wasla/.env ]; then
+      umask 077
+      printf 'POSTGRES_PASSWORD=%s\nCODE_SECRET=%s\nPHONE_PEPPER=%s\n' \
+        "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > /opt/wasla/.env
+    fi
+  - chown -R deploy:deploy /opt/wasla
+  - systemctl restart ssh
+  - systemctl enable --now fail2ban

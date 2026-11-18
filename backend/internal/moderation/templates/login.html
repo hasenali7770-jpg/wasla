@@ -1,0 +1,13 @@
+{{define "title"}}تسجيل الدخول{{end}}
+{{define "content"}}
+<section class="card narrow">
+  <h1>دخول المشرفين</h1>
+  {{if .Error}}<p class="alert">بيانات الدخول غير صحيحة.</p>{{end}}
+  <form method="post" action="/admin/login">
+    <label>البريد الإلكتروني <input type="email" name="email" required autocomplete="username" dir="ltr"></label>
+    <label>كلمة المرور <input type="password" name="password" required autocomplete="current-password" dir="ltr"></label>
+    <label>رمز التحقق (6 أرقام) <input name="totp" required inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" dir="ltr"></label>
+    <button>دخول</button>
+  </form>
+</section>
+{{end}}

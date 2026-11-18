@@ -1,0 +1,5 @@
+# Only backend/ and db/ are needed to build the server image.
+*
+!backend/
+!db/
+**/*_test.go

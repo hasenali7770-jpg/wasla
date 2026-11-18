@@ -1,0 +1,32 @@
+{{define "title"}}طابور المراجعة{{end}}
+{{define "content"}}
+<h1>طابور المراجعة</h1>
+<div class="stats">
+  <div class="stat p1"><b>{{.Counts.Critical}}</b>حرجة</div>
+  <div class="stat p2"><b>{{.Counts.High}}</b>عالية</div>
+  <div class="stat"><b>{{.Counts.Normal}}</b>عادية</div>
+  <div class="stat {{if .Counts.Overdue}}overdue{{end}}"><b>{{.Counts.Overdue}}</b>متأخرة عن المهلة</div>
+  {{if ge .Session.Staff.Role 3}}<div class="stat"><b>{{.OpenLegal}}</b>طلبات رسمية مفتوحة</div>{{end}}
+</div>
+{{if .Reports}}
+<table>
+  <thead><tr><th>#</th><th>الأولوية</th><th>السبب</th><th>المُبلَّغ عنه</th><th>الرسائل</th><th>وصل في</th><th>المهلة</th><th>المسؤول</th></tr></thead>
+  <tbody>
+  {{range .Reports}}
+  <tr class="{{if overdue .DueAt}}row-overdue{{end}}">
+    <td><a href="/admin/reports/{{.ID}}">{{.ID}}</a></td>
+    <td><span class="badge p{{.Priority}}">{{priority .Priority}}</span></td>
+    <td>{{reason .Reason}}</td>
+    <td>{{if .TargetUserID}}<a href="/admin/users/{{deref .TargetUserID}}">{{.TargetName}}</a>{{else if .ChatID}}محادثة {{deref .ChatID}}{{end}}</td>
+    <td>{{.MessageCount}}</td>
+    <td>{{ts .CreatedAt}}</td>
+    <td>{{ts .DueAt}}</td>
+    <td>{{if .AssignedName}}{{.AssignedName}}{{else}}<span class="muted">—</span>{{end}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">لا توجد بلاغات مفتوحة.</p>
+{{end}}
+{{end}}

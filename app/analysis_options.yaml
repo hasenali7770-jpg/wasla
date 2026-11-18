@@ -1,0 +1,24 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - lib/gen/**
+    - lib/core/l10n/app_localizations*.dart
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+  errors:
+    # RTL safety (docs/01-architecture.md §10.3) is also checked by the
+    # tool/check_rtl.sh script in CI.
+    missing_required_param: error
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    avoid_print: true
+    require_trailing_commas: true

@@ -2,14 +2,20 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.47.9"
+  PROTOC_GEN_GO: "v1.36.6"
+  PROTOC_PLUGIN_DART: "25.1.0"
 
 jobs:
   proto:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: bufbuild/buf-action@v1
@@ -18,11 +24,27 @@ jobs:
           lint: true
           format: false
           # On pull requests buf-action also checks for breaking changes
-          # against the base branch (its default behaviour).
+          # against the base branch (its default behaviour). Results show in
+          # the job log; no PR comment (the CI token is read-only).
+          pr_comment: false
           push: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache: false
+      - uses: dart-lang/setup-dart@v1
+      - name: Generated code is up to date
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO}
+          dart pub global activate protoc_plugin ${PROTOC_PLUGIN_DART}
+          export PATH="$PATH:$(go env GOPATH)/bin:$HOME/.pub-cache/bin"
+          cd proto
+          buf generate --template buf.gen.go.yaml
+          buf generate --template buf.gen.dart.yaml
+          git diff --exit-code -- ../backend/gen ../app/lib/gen || { echo "::error::Run 'make proto-gen' and commit the result"; exit 1; }
 
   database:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16.4-alpine
@@ -39,7 +61,7 @@ jobs:
       PGPASSWORD: ci
       PGDATABASE: wasla
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Migrate up, down, up
         run: |
           for f in db/postgres/migrations/*.up.sql; do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
@@ -49,20 +71,112 @@ jobs:
         run: for f in db/postgres/tests/*.sql; do psql -v ON_ERROR_STOP=1 -f "$f"; done
 
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: wasla
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: wasla
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wasla" --health-interval 5s --health-retries 10
     defaults:
       run:
         working-directory: backend
+    env:
+      WASLA_TEST_POSTGRES_URL: postgres://wasla:ci@localhost:5432/wasla?sslmode=disable
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
       - name: gofmt
         run: test -z "$(gofmt -l .)"
       - run: go vet ./...
-      - run: go test -race ./...
+      - name: Unit + integration tests (race detector)
+        run: go test -race -count=1 ./...
       - run: go build ./cmd/wasla-server
+      - name: Server Docker image builds
+        working-directory: .
+        run: docker build -f backend/Dockerfile -t wasla-server:ci .
 
-  # The Flutter job is added in Phase 1 sprint 1, once app/ is generated:
-  #   flutter analyze, flutter test (incl. RTL/LTR golden tests), APK build.
+  app:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: RTL layout check
+        run: tool/check_rtl.sh
+      - run: flutter analyze
+      - run: flutter test
+      - name: Build debug APK
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@v6
+        with:
+          name: wasla-debug-apk
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+  e2e:
+    # The real Go server and the real Dart protocol client, end to end.
+    runs-on: ubuntu-24.04
+    needs: [backend, app]
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: wasla
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: wasla
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wasla" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports: ["6379:6379"]
+    env:
+      PGPASSWORD: ci
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Migrate
+        run: for f in db/postgres/migrations/*.up.sql; do psql -h localhost -U wasla -d wasla -v ON_ERROR_STOP=1 -q -f "$f"; done
+      - name: Start server (dev mode)
+        working-directory: backend
+        run: |
+          go build -o /tmp/wasla-server ./cmd/wasla-server
+          WASLA_ENV=dev WASLA_POSTGRES_URL="postgres://wasla:ci@localhost:5432/wasla?sslmode=disable" \
+          WASLA_REDIS_URL=redis://localhost:6379/0 WASLA_HTTP_ADDR=127.0.0.1:8080 \
+            nohup /tmp/wasla-server > /tmp/server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:8080/readyz && exit 0; sleep 1; done
+          cat /tmp/server.log; exit 1
+      - name: Dart client against server
+        working-directory: app
+        env:
+          WASLA_E2E_URL: ws://127.0.0.1:8080/ws
+        run: |
+          flutter pub get
+          flutter test test/e2e_backend_test.dart

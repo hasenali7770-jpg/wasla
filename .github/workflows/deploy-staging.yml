@@ -1,0 +1,113 @@
+name: deploy-staging
+
+# Deploys main to the staging server after CI passes, then builds an APK that
+# points at it. Needs two repository secrets (docs/staging-setup.md):
+#   STAGING_HOST     the server's IPv4 address
+#   STAGING_SSH_KEY  private key for the "deploy" user created by cloud-init
+# Without them the workflow does nothing and says so.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.9"
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    outputs:
+      configured: ${{ steps.cfg.outputs.configured }}
+      domain: ${{ steps.cfg.outputs.domain }}
+    env:
+      STAGING_HOST: ${{ secrets.STAGING_HOST }}
+      STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+    steps:
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -z "$STAGING_HOST" ] || [ -z "$STAGING_SSH_KEY" ]; then
+            echo "::warning::Staging is not configured yet (secrets STAGING_HOST and STAGING_SSH_KEY). See docs/staging-setup.md."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          host=$(echo "$STAGING_HOST" | tr -d '[:space:]')
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+          echo "domain=$(echo "$host" | tr . -).sslip.io" >> "$GITHUB_OUTPUT"
+          echo "HOST=$host" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v5
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Build server image
+        if: steps.cfg.outputs.configured == 'true'
+        run: docker build -f backend/Dockerfile -t wasla-server:staging .
+
+      - name: SSH setup
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$STAGING_SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          # First contact trusts the server's key (fine for staging).
+          for i in $(seq 1 10); do ssh-keyscan -T 10 -t ed25519 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null && break; sleep 6; done
+          ssh -o BatchMode=yes deploy@"$HOST" 'docker version --format "Docker {{.Server.Version}} ready"'
+
+      - name: Ship image and config
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          docker save wasla-server:staging | gzip | ssh deploy@"$HOST" 'gunzip | docker load'
+          scp deploy/staging/compose.yml deploy/staging/Caddyfile deploy@"$HOST":/opt/wasla/
+          ssh deploy@"$HOST" "cd /opt/wasla && sed -i '/^STAGING_DOMAIN=/d' .env && echo STAGING_DOMAIN=${{ steps.cfg.outputs.domain }} >> .env"
+
+      - name: Start / update
+        if: steps.cfg.outputs.configured == 'true'
+        run: ssh deploy@"$HOST" 'cd /opt/wasla && docker compose up -d --remove-orphans && docker image prune -f >/dev/null'
+
+      - name: Health check
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          url="https://${{ steps.cfg.outputs.domain }}/readyz"
+          for i in $(seq 1 60); do
+            if curl -sf "$url"; then echo; echo "Staging is up: $url"; exit 0; fi
+            sleep 5
+          done
+          ssh deploy@"$HOST" 'cd /opt/wasla && docker compose ps && docker compose logs --tail 50'
+          exit 1
+
+  apk:
+    needs: deploy
+    if: needs.deploy.outputs.configured == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build staging APK
+        run: flutter build apk --debug --dart-define=WASLA_WS_URL=wss://${{ needs.deploy.outputs.domain }}/ws
+      - uses: actions/upload-artifact@v6
+        with:
+          name: wasla-staging-apk
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 30

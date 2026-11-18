@@ -1,0 +1,47 @@
+{{define "title"}}مستخدم {{.U.ID}}{{end}}
+{{define "content"}}
+{{$csrf := .Session.CSRF}}
+<h1>المستخدم <bdi>{{.U.Name}}</bdi></h1>
+<section class="card">
+  <dl class="grid">
+    <dt>الرقم التعريفي</dt><dd>{{.U.ID}}</dd>
+    <dt>اسم المستخدم</dt><dd dir="ltr">{{if .U.Username}}@{{.U.Username}}{{else}}—{{end}}</dd>
+    <dt>الهاتف</dt><dd dir="ltr">{{if .U.Phone}}{{.U.Phone}}{{else}}—{{end}}</dd>
+    <dt>تاريخ التسجيل</dt><dd>{{ts .U.CreatedAt}}</dd>
+    <dt>الجلسات النشطة</dt><dd>{{.U.Sessions}}</dd>
+    <dt>الحالة</dt><dd>{{if .U.Deleted}}حساب محذوف{{else if .U.BannedAt}}<span class="badge p1">محظور</span> منذ {{tsp .U.BannedAt}} حتى {{if .U.BanExpires}}{{tsp .U.BanExpires}}{{else}}بشكل دائم{{end}} — <bdi>{{.U.BanReason}}</bdi>{{else}}نشط{{end}}</dd>
+  </dl>
+</section>
+<section class="card">
+  {{if .U.BannedAt}}
+  {{if ge .Session.Staff.Role 2}}
+  <h2>رفع الحظر</h2>
+  <form method="post" action="/admin/users/{{.U.ID}}/unban">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>السبب <textarea name="reason" required minlength="3" rows="2"></textarea></label>
+    <button class="secondary">رفع الحظر</button>
+  </form>
+  {{end}}
+  {{else}}
+  <h2>حظر المستخدم</h2>
+  <form method="post" action="/admin/users/{{.U.ID}}/ban">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <label>المدة <select name="duration"><option value="1d">يوم واحد</option><option value="7d">7 أيام</option>
+      {{if ge .Session.Staff.Role 2}}<option value="30d">30 يوماً</option><option value="perm">دائم</option>{{end}}</select></label>
+    <label>السبب <textarea name="reason" required minlength="3" rows="2"></textarea></label>
+    <button class="danger">حظر</button>
+  </form>
+  {{end}}
+</section>
+<h2>البلاغات ضده</h2>
+{{if .Reports}}<table><thead><tr><th>#</th><th>السبب</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>
+{{range .Reports}}<tr><td><a href="/admin/reports/{{.ID}}">{{.ID}}</a></td><td>{{reason .Reason}}</td><td>{{status .Status}}</td><td>{{ts .CreatedAt}}</td></tr>{{end}}
+</tbody></table>{{else}}<p class="muted">لا يوجد.</p>{{end}}
+<h2>الإجراءات السابقة</h2>
+{{template "actions" .Actions}}
+{{end}}
+{{define "actions"}}
+{{if .}}<table><thead><tr><th>التاريخ</th><th>الإجراء</th><th>المشرف</th><th>السبب</th></tr></thead><tbody>
+{{range .}}<tr><td>{{ts .CreatedAt}}</td><td>{{action .Action}}</td><td>{{.Staff}}</td><td><bdi>{{.Reason}}</bdi></td></tr>{{end}}
+</tbody></table>{{else}}<p class="muted">لا يوجد.</p>{{end}}
+{{end}}
