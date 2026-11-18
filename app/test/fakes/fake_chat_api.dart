@@ -2,7 +2,10 @@ import 'package:fixnum/fixnum.dart';
 import 'package:wasla/core/chat/chat_api.dart';
 import 'package:wasla/core/net/rpc_exception.dart';
 import 'package:wasla/gen/proto/wasla/v1/chats.pb.dart';
+import 'package:wasla/gen/proto/wasla/v1/common.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/contacts.pb.dart';
+import 'package:wasla/gen/proto/wasla/v1/frame.pbenum.dart';
+import 'package:wasla/gen/proto/wasla/v1/media.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/messages.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/moderation.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/updates.pb.dart';
@@ -18,6 +21,11 @@ class FakeChatApi implements ChatApi {
   final differenceCalls = <Int64>[];
   GetDifferenceResponse Function(Int64 pts)? difference;
   int _seq = 100;
+
+  /// Uploaded media by id (filled by FakeMediaTransfer).
+  final media = <Int64, Media>{};
+  final downloads = <GetDownloadUrlRequest>[];
+  Int64? profilePhoto;
   int listCalls = 0;
 
   /// Simulates no network: list, difference and send fail.
@@ -58,10 +66,38 @@ class FakeChatApi implements ChatApi {
       senderId: Int64(1),
       randomId: req.randomId,
       date: Int64(DateTime.now().millisecondsSinceEpoch ~/ 1000),
-      content: MessageContent(text: TextContent(text: req.content.text)),
+      content: req.content.hasMedia()
+          ? _mediaContent(req.content.media)
+          : MessageContent(text: TextContent(text: req.content.text)),
       replyToSeq: req.replyToSeq,
     );
     return SendMessageResponse(message: m, pts: Int64(_seq), ptsCount: 1);
+  }
+
+  MessageContent _mediaContent(InputMedia in_) {
+    final m = media[in_.mediaId];
+    if (m == null) throw const RpcException(ErrorCode.ERROR_CODE_NOT_FOUND);
+    return m.kind == MediaKind.MEDIA_KIND_PHOTO
+        ? MessageContent(photo: PhotoContent(media: m, caption: in_.caption))
+        : MessageContent(document: DocumentContent(media: m, caption: in_.caption));
+  }
+
+  @override
+  Future<CreateUploadResponse> createUpload(CreateUploadRequest req) async => throw UnimplementedError();
+  @override
+  Future<GetUploadPartUrlsResponse> uploadPartUrls(String uploadId, List<int> parts) async => throw UnimplementedError();
+  @override
+  Future<Media> completeUpload(CompleteUploadRequest req) async => throw UnimplementedError();
+  @override
+  Future<String> downloadUrl(GetDownloadUrlRequest req) async {
+    downloads.add(req);
+    return 'https://media.test/${req.mediaId}';
+  }
+
+  @override
+  Future<User> setProfilePhoto(Int64 mediaId) async {
+    profilePhoto = mediaId;
+    return User(id: Int64(1), firstName: 'Me', photo: Avatar(mediaId: mediaId));
   }
 
   @override

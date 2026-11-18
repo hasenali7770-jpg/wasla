@@ -6,6 +6,10 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>لإرسال الصور في المحادثات واختيار صورتك الشخصية.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>لالتقاط صورة وإرسالها في المحادثة.</string>
 	<key>CFBundleDisplayName</key>
 	<string>وصلة</string>
 	<key>CFBundleExecutable</key>

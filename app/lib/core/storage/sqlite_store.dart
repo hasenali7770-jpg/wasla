@@ -27,12 +27,13 @@ class SqliteStore implements LocalStore {
   }
 
   final Database db;
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   void _migrate() {
     final v = db.select('PRAGMA user_version').first.columnAt(0) as int;
     if (v >= schemaVersion) return;
-    db.execute('''
+    if (v < 1) {
+      db.execute('''
       CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, chat BLOB NOT NULL, dialog BLOB NOT NULL);
       CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, user BLOB NOT NULL);
@@ -42,8 +43,13 @@ class SqliteStore implements LocalStore {
       CREATE TABLE IF NOT EXISTS outbox (
         random_id INTEGER PRIMARY KEY, chat_id INTEGER NOT NULL, text TEXT NOT NULL,
         reply_to INTEGER, created_at INTEGER NOT NULL, failed INTEGER NOT NULL DEFAULT 0);
-      PRAGMA user_version = $schemaVersion;
     ''');
+    }
+    if (v < 2) {
+      // v2: photos and files waiting to be sent (OutMedia as JSON).
+      db.execute('ALTER TABLE outbox ADD COLUMN media TEXT');
+    }
+    db.execute('PRAGMA user_version = $schemaVersion');
   }
 
   String? _kv(String key) {
@@ -89,6 +95,7 @@ class SqliteStore implements LocalStore {
           replyTo: r['reply_to'] == null ? null : Int64(r['reply_to'] as int),
           createdAt: DateTime.fromMillisecondsSinceEpoch(r['created_at'] as int),
           failed: (r['failed'] as int) == 1,
+          media: OutMedia.fromJson(r['media'] as String?),
         ),
     ];
     return Snapshot(
@@ -158,8 +165,8 @@ class SqliteStore implements LocalStore {
 
   @override
   void saveOutgoing(StoredOutgoing o) => db.execute(
-        'INSERT OR REPLACE INTO outbox (random_id, chat_id, text, reply_to, created_at, failed) VALUES (?, ?, ?, ?, ?, ?)',
-        [o.randomId.toInt(), o.chatId.toInt(), o.text, o.replyTo?.toInt(), o.createdAt.millisecondsSinceEpoch, o.failed ? 1 : 0],
+        'INSERT OR REPLACE INTO outbox (random_id, chat_id, text, reply_to, created_at, failed, media) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [o.randomId.toInt(), o.chatId.toInt(), o.text, o.replyTo?.toInt(), o.createdAt.millisecondsSinceEpoch, o.failed ? 1 : 0, o.media?.toJson()],
       );
 
   @override

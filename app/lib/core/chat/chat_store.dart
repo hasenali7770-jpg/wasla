@@ -11,6 +11,8 @@ import '../../gen/proto/wasla/v1/messages.pb.dart';
 import '../../gen/proto/wasla/v1/updates.pb.dart';
 import '../../gen/proto/wasla/v1/users.pb.dart';
 import '../auth/auth_controller.dart';
+import '../media/media.dart';
+import '../media/source.dart';
 import '../net/connection.dart';
 import '../storage/local_store.dart';
 import '../net/rpc_exception.dart';
@@ -22,11 +24,19 @@ enum OutStatus { sending, failed }
 
 /// A message the user sent that the server has not confirmed yet.
 class Outgoing {
-  Outgoing({required this.chatId, required this.randomId, required this.text, this.replyTo, DateTime? createdAt})
+  Outgoing({required this.chatId, required this.randomId, required this.text, this.replyTo, this.media, DateTime? createdAt})
       : createdAt = createdAt ?? DateTime.now();
   final Int64 chatId;
   final Int64 randomId;
+
+  /// The message text, or the caption of [media].
   final String text;
+
+  /// A photo or file to upload before the message is sent.
+  final OutMedia? media;
+
+  /// Upload progress 0..1 while [media] is uploading.
+  double progress = 0;
   final Int64? replyTo;
   final DateTime createdAt;
   OutStatus status = OutStatus.sending;
@@ -125,7 +135,8 @@ class ChatStore extends Notifier<int> {
     for (final o in snap.outbox) {
       final e = chats[o.chatId];
       if (e == null) continue;
-      e.outbox.add(Outgoing(chatId: o.chatId, randomId: o.randomId, text: o.text, replyTo: o.replyTo, createdAt: o.createdAt)
+      e.outbox.add(Outgoing(
+          chatId: o.chatId, randomId: o.randomId, text: o.text, replyTo: o.replyTo, media: o.media, createdAt: o.createdAt)
         ..status = o.failed ? OutStatus.failed : OutStatus.sending);
     }
     if (!snap.isEmpty && snap.pts > Int64.ZERO) {
@@ -294,20 +305,58 @@ class ChatStore extends Notifier<int> {
     _deliver(o);
   }
 
+  /// Sends a photo or file (with an optional caption). The upload runs
+  /// first; both steps retry like text messages and survive restarts.
+  void sendMedia(Int64 chatId, OutMedia media, {String caption = '', Int64? replyTo}) {
+    final e = chats[chatId];
+    if (e == null) return;
+    final o = Outgoing(chatId: chatId, randomId: _randomId(), text: caption.trim(), replyTo: replyTo, media: media);
+    e.outbox.add(o);
+    _saveOutgoing(o);
+    _changed();
+    _deliver(o);
+  }
+
+  final _uploading = <Int64>{};
+
   Future<void> _deliver(Outgoing o) async {
     final e = chats[o.chatId];
     if (e == null) return;
+    final m = o.media;
+    if (m != null && _uploading.contains(o.randomId)) return; // already in progress
     o.status = OutStatus.sending;
     o.attempts++;
     try {
+      if (m != null && m.mediaId == Int64.ZERO) {
+        _uploading.add(o.randomId);
+        DateTime last = DateTime(2000);
+        try {
+          final stored = await ref.read(mediaTransferProvider).upload(m, onProgress: (p) {
+            o.progress = p;
+            final now = DateTime.now();
+            if (now.difference(last) > const Duration(milliseconds: 200)) {
+              last = now;
+              _changed();
+            }
+          });
+          m.mediaId = stored.id;
+        } finally {
+          _uploading.remove(o.randomId);
+        }
+        _saveOutgoing(o); // a restart now only re-sends the message
+      }
+      final caption = o.text.isEmpty ? null : FormattedText(text: o.text);
       final r = await _api.send(SendMessageRequest(
         peer: e.chat.type == ChatType.CHAT_TYPE_GROUP ? null : _peerOf(e),
         randomId: o.randomId,
-        content: InputContent(text: FormattedText(text: o.text)),
+        content: m == null
+            ? InputContent(text: FormattedText(text: o.text))
+            : InputContent(media: InputMedia(mediaId: m.mediaId, caption: caption)),
         replyToSeq: o.replyTo,
       ));
       e.outbox.remove(o);
       _db.deleteOutgoing(o.randomId);
+      if (m != null) await _keepSentMedia(m);
       _putMessage(e, r.message);
       e.dialog.readInboxSeq = r.message.seq;
     } on RpcException catch (err) {
@@ -326,7 +375,42 @@ class ChatStore extends Notifier<int> {
           ..error = err;
         _saveOutgoing(o);
       }
+    } catch (_) {
+      // The prepared file is gone or unreadable: nothing to retry.
+      o
+        ..status = OutStatus.failed
+        ..error = const RpcException(ErrorCode.ERROR_CODE_INVALID_ARGUMENT);
+      _saveOutgoing(o);
     }
+    _changed();
+  }
+
+  /// Our own photo is shown from the bytes we have instead of downloading
+  /// it back; the outbox copy is no longer needed.
+  Future<void> _keepSentMedia(OutMedia m) async {
+    final cache = ref.read(mediaCacheProvider);
+    var bytes = m.bytes;
+    if (m.isPhoto && bytes == null && m.path != null) {
+      try {
+        final src = await fileSource(m.path!);
+        bytes = await src.read(0, src.length);
+      } catch (_) {}
+    }
+    if (m.isPhoto && bytes != null) {
+      cache.put(m.mediaId, 'thumb_m', bytes);
+      cache.put(m.mediaId, '', bytes);
+    }
+    if (m.path != null) await deleteFile(m.path!);
+  }
+
+  /// Uploads a new profile photo and sets it.
+  Future<void> setMyPhoto(OutMedia m) async {
+    final stored = await ref.read(mediaTransferProvider).upload(m);
+    if (m.bytes != null) ref.read(mediaCacheProvider).put(stored.id, 'thumb_s', m.bytes!);
+    final me = await _api.setProfilePhoto(stored.id);
+    users[me.id] = me;
+    _db.saveUser(me);
+    if (m.path != null) await deleteFile(m.path!);
     _changed();
   }
 
@@ -350,6 +434,8 @@ class ChatStore extends Notifier<int> {
   void discard(Outgoing o) {
     chats[o.chatId]?.outbox.remove(o);
     _db.deleteOutgoing(o.randomId);
+    final path = o.media?.path;
+    if (path != null) deleteFile(path);
     _changed();
   }
 
@@ -360,6 +446,7 @@ class ChatStore extends Notifier<int> {
         replyTo: o.replyTo,
         createdAt: o.createdAt,
         failed: o.status == OutStatus.failed,
+        media: o.media,
       ));
 
   // ---------------------------------------------------------------------------

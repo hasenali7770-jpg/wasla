@@ -1,9 +1,72 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:fixnum/fixnum.dart';
 
 import '../../gen/proto/wasla/v1/chats.pb.dart';
 import '../../gen/proto/wasla/v1/messages.pb.dart';
 import '../../gen/proto/wasla/v1/users.pb.dart';
 import 'local_store_stub.dart' if (dart.library.ffi) 'sqlite_store.dart' as impl;
+
+/// A photo or file attached to an unsent message. The prepared file stays
+/// on the device until the server confirms the message, so sending resumes
+/// after a restart. [mediaId] is set once the upload has completed.
+class OutMedia {
+  OutMedia({
+    required this.kind,
+    required this.fileName,
+    required this.mime,
+    required this.size,
+    this.path,
+    this.bytes,
+    this.width = 0,
+    this.height = 0,
+    this.mediaId = Int64.ZERO,
+  });
+
+  /// MediaKind value (1 photo, 3 document).
+  final int kind;
+  final String fileName;
+  final String mime;
+  final int size;
+
+  /// Local file (Android/iOS/desktop).
+  final String? path;
+
+  /// In-memory copy (web, and the photo preview). Never stored.
+  Uint8List? bytes;
+  final int width;
+  final int height;
+  Int64 mediaId;
+
+  bool get isPhoto => kind == 1;
+
+  String toJson() => jsonEncode({
+        'k': kind,
+        'n': fileName,
+        'm': mime,
+        's': size,
+        'p': path,
+        'w': width,
+        'h': height,
+        'id': mediaId.toString(),
+      });
+
+  static OutMedia? fromJson(String? s) {
+    if (s == null || s.isEmpty) return null;
+    final j = jsonDecode(s) as Map<String, dynamic>;
+    return OutMedia(
+      kind: j['k'] as int,
+      fileName: j['n'] as String,
+      mime: j['m'] as String,
+      size: j['s'] as int,
+      path: j['p'] as String?,
+      width: j['w'] as int? ?? 0,
+      height: j['h'] as int? ?? 0,
+      mediaId: Int64.parseInt(j['id'] as String? ?? '0'),
+    );
+  }
+}
 
 /// A message waiting to be sent, as stored across app restarts.
 class StoredOutgoing {
@@ -14,6 +77,7 @@ class StoredOutgoing {
     required this.createdAt,
     this.replyTo,
     this.failed = false,
+    this.media,
   });
   final Int64 chatId;
   final Int64 randomId;
@@ -21,6 +85,7 @@ class StoredOutgoing {
   final Int64? replyTo;
   final DateTime createdAt;
   final bool failed;
+  final OutMedia? media;
 }
 
 /// Everything the app had on screen last time, loaded at startup.

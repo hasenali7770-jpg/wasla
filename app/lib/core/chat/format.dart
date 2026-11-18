@@ -28,6 +28,11 @@ String chatTitle(ChatEntry e, ChatStore store, AppLocalizations l) {
 String preview(Message m, AppLocalizations l) {
   final c = m.content;
   if (c.hasText()) return c.text.text.text.replaceAll('\n', ' ');
+  if (c.hasPhoto()) {
+    final cap = c.photo.caption.text;
+    return cap.isEmpty ? l.photoMsg : '${l.photoMsg} · ${cap.replaceAll('\n', ' ')}';
+  }
+  if (c.hasDocument()) return l.fileMsg(c.document.media.fileName);
   if (c.hasLocation()) return l.locationMsg;
   if (c.hasContact()) return l.contactMsg;
   return l.unsupportedMsg;
@@ -73,4 +78,20 @@ String initials(String name) {
   final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
   if (parts.isEmpty) return '؟';
   return parts.take(2).map((p) => p.characters.first).join();
+}
+
+/// "820 KB", "3.4 MB" (localised units).
+String fileSize(int bytes, AppLocalizations l) {
+  if (bytes < 1024 * 1024) return l.sizeKb((bytes / 1024).ceil().toString());
+  final mb = bytes / (1024 * 1024);
+  return l.sizeMb(mb >= 10 ? mb.round().toString() : mb.toStringAsFixed(1));
+}
+
+/// Caption (or text) of a message, empty for media without one.
+String bodyText(Message m) {
+  final c = m.content;
+  if (c.hasText()) return c.text.text.text;
+  if (c.hasPhoto()) return c.photo.caption.text;
+  if (c.hasDocument()) return c.document.caption.text;
+  return '';
 }
