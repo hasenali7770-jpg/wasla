@@ -67,6 +67,8 @@ jobs:
           docker save wasla-server:staging | gzip | ssh deploy@"$HOST" 'gunzip | docker load'
           scp deploy/staging/compose.yml deploy/staging/Caddyfile deploy@"$HOST":/opt/wasla/
           ssh deploy@"$HOST" "cd /opt/wasla && sed -i '/^STAGING_DOMAIN=/d' .env && echo STAGING_DOMAIN=${{ steps.cfg.outputs.domain }} >> .env"
+          # Secrets added in later versions are generated once on the server.
+          ssh deploy@"$HOST" 'cd /opt/wasla && (grep -q "^S3_SECRET=" .env || echo "S3_SECRET=$(openssl rand -hex 24)" >> .env)'
 
       - name: Start / update
         if: steps.cfg.outputs.configured == 'true'

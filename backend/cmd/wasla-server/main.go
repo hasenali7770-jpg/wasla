@@ -101,10 +101,22 @@ func run(log *slog.Logger, args []string) error {
 
 	var store *media.Storage
 	if cfg.S3Endpoint != "" {
-		store, err = media.NewStorage(ctx, media.StorageConfig{Endpoint: cfg.S3Endpoint, Secure: cfg.S3Secure,
-			PublicURL: cfg.S3PublicURL, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, Bucket: cfg.S3Bucket, Region: cfg.S3Region})
-		if err != nil {
-			return err
+		// Storage may start after us (containers, restarts): retry for a minute.
+		for attempt := 1; ; attempt++ {
+			store, err = media.NewStorage(ctx, media.StorageConfig{Endpoint: cfg.S3Endpoint, Secure: cfg.S3Secure,
+				PublicURL: cfg.S3PublicURL, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, Bucket: cfg.S3Bucket, Region: cfg.S3Region})
+			if err == nil {
+				break
+			}
+			if attempt == 30 {
+				return err
+			}
+			log.Warn("storage not ready, retrying", "attempt", attempt, "err", err)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(2 * time.Second):
+			}
 		}
 	} else {
 		log.Warn("WASLA_S3_ENDPOINT not set: photos and files are disabled")
