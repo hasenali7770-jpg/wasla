@@ -34,7 +34,7 @@ const (
 	MaxTextLen    = 4096
 	MaxEntities   = 100
 	EditWindow    = 48 * time.Hour
-	selectColumns = `chat_id, seq, sender_id, random_id, kind, text, entities, reply_to_seq, fwd, extra, created_at, edited_at, deleted_at`
+	selectColumns = `chat_id, seq, sender_id, random_id, kind, text, entities, reply_to_seq, fwd, extra, created_at, edited_at, deleted_at, media_id`
 )
 
 // Row is one messages row.
@@ -46,6 +46,7 @@ type Row struct {
 	ReplyTo                         *int64
 	CreatedAt                       time.Time
 	EditedAt, DeletedAt             *time.Time
+	MediaID                         *int64
 }
 
 // New is a message to insert (content already validated).
@@ -56,7 +57,8 @@ type New struct {
 	Entities           []byte
 	ReplyTo            int64
 	Fwd                []byte
-	Extra              []byte
+	Extra              []byte // location/contact/service JSON; for photo/document the Media JSON
+	MediaID            int64
 }
 
 // Querier is satisfied by pgx.Tx and *pgxpool.Pool.
@@ -71,7 +73,7 @@ func scan(rows pgx.Rows) ([]Row, error) {
 	for rows.Next() {
 		var r Row
 		if err := rows.Scan(&r.ChatID, &r.Seq, &r.SenderID, &r.RandomID, &r.Kind, &r.Text, &r.Entities,
-			&r.ReplyTo, &r.Fwd, &r.Extra, &r.CreatedAt, &r.EditedAt, &r.DeletedAt); err != nil {
+			&r.ReplyTo, &r.Fwd, &r.Extra, &r.CreatedAt, &r.EditedAt, &r.DeletedAt, &r.MediaID); err != nil {
 			return nil, err
 		}
 		out = append(out, r)
@@ -100,9 +102,13 @@ func Insert(ctx context.Context, tx pgx.Tx, chatID int64, m New) (row Row, creat
 	if m.ReplyTo != 0 {
 		reply = m.ReplyTo
 	}
-	out, err := query(ctx, tx, `INSERT INTO messages (chat_id, seq, sender_id, random_id, kind, text, entities, reply_to_seq, fwd, extra)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING `+selectColumns,
-		chatID, seq, m.SenderID, m.RandomID, m.Kind, m.Text, nullJSON(m.Entities), reply, nullJSON(m.Fwd), nullJSON(m.Extra))
+	var mediaID any
+	if m.MediaID != 0 {
+		mediaID = m.MediaID
+	}
+	out, err := query(ctx, tx, `INSERT INTO messages (chat_id, seq, sender_id, random_id, kind, text, entities, reply_to_seq, fwd, extra, media_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING `+selectColumns,
+		chatID, seq, m.SenderID, m.RandomID, m.Kind, m.Text, nullJSON(m.Entities), reply, nullJSON(m.Fwd), nullJSON(m.Extra), mediaID)
 	if err != nil {
 		return Row{}, false, err
 	}
@@ -179,6 +185,24 @@ func ToProto(r Row, viewer int64, pinned bool) (*pb.Message, error) {
 			return nil, err
 		}
 		c.Kind = &pb.MessageContent_Contact{Contact: &ct}
+	case KindPhoto, KindDocument:
+		var md pb.Media
+		if err := protojson.Unmarshal(r.Extra, &md); err != nil {
+			return nil, err
+		}
+		var caption *pb.FormattedText
+		if r.Text != "" {
+			ft, err := formatted(r.Text, r.Entities)
+			if err != nil {
+				return nil, err
+			}
+			caption = ft
+		}
+		if r.Kind == KindPhoto {
+			c.Kind = &pb.MessageContent_Photo{Photo: &pb.PhotoContent{Media: &md, Caption: caption}}
+		} else {
+			c.Kind = &pb.MessageContent_Document{Document: &pb.DocumentContent{Media: &md, Caption: caption}}
+		}
 	case KindService:
 		var sc pb.ServiceContent
 		if err := protojson.Unmarshal(r.Extra, &sc); err != nil {
@@ -186,7 +210,7 @@ func ToProto(r Row, viewer int64, pinned bool) (*pb.Message, error) {
 		}
 		c.Kind = &pb.MessageContent_Service{Service: &sc}
 	default:
-		// Media kinds arrive with the media service (weeks 9–10).
+		// Video and voice arrive in a later update.
 		return nil, fmt.Errorf("msgstore: unsupported kind %d", r.Kind)
 	}
 	m.Content = c
@@ -244,6 +268,20 @@ func EncodeText(ft *pb.FormattedText) (string, []byte, error) {
 	}
 	b, err := json.Marshal(parts)
 	return text, b, err
+}
+
+// MaxCaptionLen is the longest photo/file caption.
+const MaxCaptionLen = 1024
+
+// EncodeCaption validates an optional caption.
+func EncodeCaption(ft *pb.FormattedText) (string, []byte, error) {
+	if ft == nil || ft.GetText() == "" {
+		return "", nil, nil
+	}
+	if len([]rune(ft.GetText())) > MaxCaptionLen {
+		return "", nil, errs.New(pb.ErrorCode_ERROR_CODE_MESSAGE_TOO_LONG, "caption longer than %d characters", MaxCaptionLen)
+	}
+	return EncodeText(ft)
 }
 
 // EncodeJSON stores a content sub-message (location, contact, service) as JSON.

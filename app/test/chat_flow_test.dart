@@ -8,6 +8,7 @@ import 'package:wasla/core/chat/chat_store.dart';
 import 'package:wasla/core/chat/format.dart';
 import 'package:wasla/core/net/connection.dart';
 import 'package:wasla/core/providers.dart';
+import 'package:wasla/core/storage/local_store.dart';
 import 'package:wasla/gen/proto/wasla/v1/chats.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/common.pbenum.dart';
 import 'package:wasla/gen/proto/wasla/v1/messages.pb.dart';
@@ -50,6 +51,7 @@ FakeChatApi seeded() {
 Widget app(FakeChatApi api) => ProviderScope(
       overrides: [
         authProvider.overrideWith(SignedIn.new),
+        localStoreProvider.overrideWithValue(Future.value(MemoryStore())),
         chatApiProvider.overrideWithValue(api),
         connectionProvider.overrideWithValue(
           WaslaConnection(url: Uri.parse('ws://127.0.0.1:1/ws'), info: const ClientInfo(platform: Platform.PLATFORM_ANDROID, appVersion: 't')),

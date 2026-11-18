@@ -53,8 +53,8 @@ runcmd:
   - |
     if [ ! -f /opt/wasla/.env ]; then
       umask 077
-      printf 'POSTGRES_PASSWORD=%s\nCODE_SECRET=%s\nPHONE_PEPPER=%s\n' \
-        "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > /opt/wasla/.env
+      printf 'POSTGRES_PASSWORD=%s\nCODE_SECRET=%s\nPHONE_PEPPER=%s\nS3_SECRET=%s\n' \
+        "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" "$(openssl rand -hex 24)" > /opt/wasla/.env
     fi
   - chown -R deploy:deploy /opt/wasla
   - systemctl restart ssh

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_localizations.dart';
 import '../../core/net/rpc_exception.dart';
+import '../../app/theme.dart';
 import '../../core/providers.dart';
 
 /// Common layout for the login steps.
@@ -24,7 +25,10 @@ class AuthScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
     return Scaffold(
+      // Login screens use a plain bar so the logo stands on the page itself.
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         leading: onBack == null ? null : BackButton(onPressed: onBack),
         actions: [
           TextButton(
@@ -42,6 +46,8 @@ class AuthScaffold extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
               children: [
+                const Center(child: BrandMark(size: 72)),
+                const SizedBox(height: 16),
                 Text(title, style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),

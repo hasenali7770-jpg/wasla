@@ -3,6 +3,7 @@ import 'package:fixnum/fixnum.dart';
 import '../../gen/proto/wasla/v1/chats.pb.dart';
 import '../../gen/proto/wasla/v1/common.pb.dart';
 import '../../gen/proto/wasla/v1/contacts.pb.dart';
+import '../../gen/proto/wasla/v1/media.pb.dart';
 import '../../gen/proto/wasla/v1/messages.pb.dart';
 import '../../gen/proto/wasla/v1/moderation.pb.dart';
 import '../../gen/proto/wasla/v1/updates.pb.dart';
@@ -30,6 +31,13 @@ abstract interface class ChatApi {
   Future<void> block(Int64 userId);
   Future<void> unblock(Int64 userId);
   Future<Int64> report(ReportRequest req);
+
+  // Photos and files.
+  Future<CreateUploadResponse> createUpload(CreateUploadRequest req);
+  Future<GetUploadPartUrlsResponse> uploadPartUrls(String uploadId, List<int> parts);
+  Future<Media> completeUpload(CompleteUploadRequest req);
+  Future<String> downloadUrl(GetDownloadUrlRequest req);
+  Future<User> setProfilePhoto(Int64 mediaId);
 }
 
 class RemoteChatApi implements ChatApi {
@@ -143,6 +151,35 @@ class RemoteChatApi implements ChatApi {
   @override
   Future<Int64> report(ReportRequest req) async =>
       (await conn.call('/wasla.v1.ModerationService/Report', req, ReportResponse.fromBuffer)).reportId;
+
+  static const _md = '/wasla.v1.MediaService/';
+
+  @override
+  Future<CreateUploadResponse> createUpload(CreateUploadRequest req) =>
+      conn.call('${_md}CreateUpload', req, CreateUploadResponse.fromBuffer);
+
+  @override
+  Future<GetUploadPartUrlsResponse> uploadPartUrls(String uploadId, List<int> parts) => conn.call(
+        '${_md}GetUploadPartUrls',
+        GetUploadPartUrlsRequest(uploadId: uploadId, partNumbers: parts),
+        GetUploadPartUrlsResponse.fromBuffer,
+      );
+
+  @override
+  Future<Media> completeUpload(CompleteUploadRequest req) async =>
+      (await conn.call('${_md}CompleteUpload', req, CompleteUploadResponse.fromBuffer)).media;
+
+  @override
+  Future<String> downloadUrl(GetDownloadUrlRequest req) async =>
+      (await conn.call('${_md}GetDownloadUrl', req, GetDownloadUrlResponse.fromBuffer)).url;
+
+  @override
+  Future<User> setProfilePhoto(Int64 mediaId) async => (await conn.call(
+        '${_u}SetProfilePhoto',
+        SetProfilePhotoRequest(mediaId: mediaId),
+        SetProfilePhotoResponse.fromBuffer,
+      ))
+          .user;
 }
 
 /// Shorthand for a peer that is a user.

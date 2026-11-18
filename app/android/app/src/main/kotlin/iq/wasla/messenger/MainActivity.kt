@@ -1,4 +1,4 @@
-package app.wasla.wasla
+package iq.wasla.messenger
 
 import io.flutter.embedding.android.FlutterActivity
 

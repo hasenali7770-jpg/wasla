@@ -245,7 +245,7 @@ func (a *Admin) queue(w http.ResponseWriter, r *http.Request, s *adminSession) {
 	rows, err := a.DB.Query(ctx, `
 		SELECT r.id, r.priority, r.reason, r.status, r.target_user_id, COALESCE(u.first_name || ' ' || u.last_name, ''),
 		       r.chat_id, cardinality(r.message_seqs), r.comment, r.created_at, r.due_at, COALESCE(st.display_name, ''),
-		       r.reporter_id, COALESCE(r.resolution, '')
+		       COALESCE(r.reporter_id, 0), COALESCE(r.resolution, '')
 		FROM reports r
 		LEFT JOIN users u ON u.id = r.target_user_id
 		LEFT JOIN staff_users st ON st.id = r.assigned_to
@@ -298,7 +298,7 @@ func (a *Admin) report(w http.ResponseWriter, r *http.Request, s *adminSession) 
 	rows, err := a.DB.Query(ctx, `
 		SELECT r.id, r.priority, r.reason, r.status, r.target_user_id, COALESCE(u.first_name || ' ' || u.last_name, ''),
 		       r.chat_id, cardinality(r.message_seqs), r.comment, r.created_at, r.due_at, COALESCE(st.display_name, ''),
-		       r.reporter_id, COALESCE(r.resolution, '')
+		       COALESCE(r.reporter_id, 0), COALESCE(r.resolution, '')
 		FROM reports r
 		LEFT JOIN users u ON u.id = r.target_user_id
 		LEFT JOIN staff_users st ON st.id = r.assigned_to
@@ -452,7 +452,7 @@ func (a *Admin) user(w http.ResponseWriter, r *http.Request, s *adminSession) {
 	}
 	rows, err := a.DB.Query(ctx, `
 		SELECT r.id, r.priority, r.reason, r.status, r.target_user_id, '', r.chat_id, cardinality(r.message_seqs),
-		       r.comment, r.created_at, r.due_at, '', r.reporter_id, COALESCE(r.resolution, '')
+		       r.comment, r.created_at, r.due_at, '', COALESCE(r.reporter_id, 0), COALESCE(r.resolution, '')
 		FROM reports r WHERE r.target_user_id = $1 ORDER BY r.created_at DESC LIMIT 50`, id)
 	if err != nil {
 		a.fail(w, err)

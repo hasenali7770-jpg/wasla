@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../core/chat/chat_store.dart';
 import '../../core/chat/format.dart';
 import '../../core/l10n/app_localizations.dart';
+import '../../core/media/media.dart';
+import 'media_view.dart';
 import '../../gen/proto/wasla/v1/messages.pb.dart';
 
 enum Tick { pending, failed, sent, read, none }
@@ -23,6 +25,7 @@ class MessageBubble extends StatelessWidget {
     this.replyPreview,
     this.onLongPress,
     this.onTap,
+    this.media,
   });
 
   final String text;
@@ -36,12 +39,17 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onTap;
 
+  /// Photo or file shown above the caption; built with the bubble's
+  /// foreground colour.
+  final Widget Function(Color fg)? media;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final bg = mine ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest;
-    final fg = mine ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface;
+    // Brand kit: outgoing bubbles are yellow with black text.
+    final bg = mine ? theme.colorScheme.secondary : theme.colorScheme.surfaceContainerHighest;
+    final fg = mine ? theme.colorScheme.onSecondary : theme.colorScheme.onSurface;
     final small = theme.textTheme.bodySmall?.copyWith(color: fg.withValues(alpha: 0.7));
     const r = Radius.circular(16);
     return Align(
@@ -77,7 +85,11 @@ class MessageBubble extends StatelessWidget {
                   ),
                   child: Text(replyPreview!, maxLines: 2, overflow: TextOverflow.ellipsis, style: small),
                 ),
-              Text(text, textDirection: textDirectionOf(text), style: TextStyle(color: fg)),
+              if (media != null) media!(fg),
+              if (text.isNotEmpty) ...[
+                if (media != null) const SizedBox(height: 4),
+                Text(text, textDirection: textDirectionOf(text), style: TextStyle(color: fg)),
+              ],
               const SizedBox(height: 2),
               Row(mainAxisSize: MainAxisSize.min, children: [
                 if (pinned) Icon(Icons.push_pin, size: 12, color: small?.color),
@@ -89,7 +101,7 @@ class MessageBubble extends StatelessWidget {
                     Tick.pending => Icon(Icons.schedule, size: 14, color: small?.color),
                     Tick.failed => Icon(Icons.error_outline, size: 14, color: theme.colorScheme.error),
                     Tick.sent => Icon(Icons.done, size: 14, color: small?.color),
-                    Tick.read => Icon(Icons.done_all, size: 14, color: theme.colorScheme.primary),
+                    Tick.read => Icon(Icons.done_all, size: 14, color: mine ? theme.colorScheme.primary : null),
                     Tick.none => const SizedBox.shrink(),
                   },
                 ],
@@ -118,9 +130,25 @@ MessageBubble bubbleFor(Message m, ChatEntry e, ChatStore store, AppLocalization
         ? userName(store.users[m.forward.fromUserId], l)
         : m.forward.fromName;
   }
+  final c = m.content;
+  final where = InMessage(m.chatId, m.seq);
+  Widget Function(Color)? media;
+  if (c.hasPhoto()) {
+    media = (_) => Builder(
+          builder: (context) => PhotoThumb(
+            key: ValueKey('photo-${c.photo.media.id}'),
+            media: c.photo.media,
+            where: where,
+            onOpen: () => PhotoViewer.open(context, c.photo.media, where),
+          ),
+        );
+  } else if (c.hasDocument()) {
+    media = (fg) => DocumentTile(media: c.document.media, where: where, color: fg);
+  }
   return MessageBubble(
     key: ValueKey('msg-${m.seq}'),
-    text: preview(m, l),
+    text: media == null ? preview(m, l) : bodyText(m),
+    media: media,
     mine: mine,
     time: timeLabel(m.date, l, timeOnly: true),
     tick: !mine ? Tick.none : (saved || m.seq <= e.dialog.readOutboxSeq ? Tick.read : Tick.sent),

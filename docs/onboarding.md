@@ -144,4 +144,5 @@ Production goes to Bahrain/UAE unless counsel says it must be in Iraq (decision 
 - [ ] Review the open pull request(s); leave comments on GitHub.
 - [ ] Get SSH access to staging (§5) once the owner has created it.
 - [ ] Pick 1–2 risks from §6 to own, and tell the owner your estimate.
+- [ ] Read [launch-checklist.md](launch-checklist.md); most items marked *(engineer)* are yours.
 - [ ] Agree with the owner on a review turnaround (suggested: within 2 working days).

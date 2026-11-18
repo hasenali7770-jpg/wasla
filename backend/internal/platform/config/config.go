@@ -25,8 +25,13 @@ type Config struct {
 	NodeID      int64
 	PostgresURL string
 	RedisURL    string
-	S3Endpoint  string
+	S3Endpoint  string // host:port the server uses; empty disables file sharing
 	S3Bucket    string
+	S3Secure    bool
+	S3PublicURL string // scheme://host phones use in signed URLs (default: same as endpoint)
+	S3Region    string
+	S3AccessKey string
+	S3SecretKey string
 	// MaxUploadBytes caps media uploads (Lean MVP: 500 MB; protocol max 2 GiB).
 	MaxUploadBytes int64
 	// SmallGroupLimit is the member cap for fan-out-on-write groups.
@@ -53,6 +58,11 @@ func Load() (Config, error) {
 		RedisURL:        env("WASLA_REDIS_URL", "redis://localhost:6379/0"),
 		S3Endpoint:      os.Getenv("WASLA_S3_ENDPOINT"),
 		S3Bucket:        env("WASLA_S3_BUCKET", "wasla-media"),
+		S3Secure:        os.Getenv("WASLA_S3_SECURE") == "true",
+		S3PublicURL:     os.Getenv("WASLA_S3_PUBLIC_URL"),
+		S3Region:        env("WASLA_S3_REGION", "us-east-1"),
+		S3AccessKey:     os.Getenv("WASLA_S3_ACCESS_KEY"),
+		S3SecretKey:     os.Getenv("WASLA_S3_SECRET_KEY"),
 		MaxUploadBytes:  500 << 20,
 		SmallGroupLimit: 200,
 		MinAppVersion:   env("WASLA_MIN_APP_VERSION", "0.1.0"),

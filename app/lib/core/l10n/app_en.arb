@@ -110,5 +110,21 @@
   "reasonFakeAccount": "Fake account",
   "reasonCopyright": "Copyright",
   "reasonOther": "Other",
-  "errRateLimitedMinutes": "Too many attempts. Try again in {minutes, plural, =1{1 minute} other{{minutes} minutes}}"
+  "errRateLimitedMinutes": "Too many attempts. Try again in {minutes, plural, =1{1 minute} other{{minutes} minutes}}",
+  "photoMsg": "📷 Photo",
+  "fileMsg": "📎 {name}",
+  "attach": "Attach",
+  "attachGallery": "Photo from gallery",
+  "attachCamera": "Take a photo",
+  "attachFile": "File",
+  "captionHint": "Add a caption…",
+  "sendPhoto": "Send photo",
+  "sendFile": "Send file",
+  "myPhoto": "My profile photo",
+  "photoUpdated": "Your photo was updated",
+  "openFailed": "No app on your phone can open this file",
+  "sizeKb": "{n} KB",
+  "sizeMb": "{n} MB",
+  "mediaUnavailable": "This photo is no longer available",
+  "photoTooBig": "The file is too large"
 }

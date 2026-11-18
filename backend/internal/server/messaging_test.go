@@ -201,11 +201,11 @@ func TestBlockingAndTakedownEnforcement(t *testing.T) {
 		t.Fatalf("banned chat still listed: %v", &dl)
 	}
 
-	// Unsupported content is refused clearly.
+	// Content that doesn't exist or is too long is refused clearly.
 	err := sara.call(mSend, &pb.SendMessageRequest{Peer: toUser(saraID), RandomId: 3, Content: &pb.InputContent{
 		Kind: &pb.InputContent_Media{Media: &pb.InputMedia{MediaId: 1}}}}, &pb.SendMessageResponse{})
-	if err.GetCode() != pb.ErrorCode_ERROR_CODE_UNIMPLEMENTED {
-		t.Fatalf("media before media service: %v", err)
+	if err.GetCode() != pb.ErrorCode_ERROR_CODE_NOT_FOUND {
+		t.Fatalf("sending a file that was never uploaded: %v", err)
 	}
 	if err := sara.call(mSend, &pb.SendMessageRequest{Peer: toUser(saraID), RandomId: 4, Content: text(strings.Repeat("ا", 4097))}, &pb.SendMessageResponse{}); err.GetCode() != pb.ErrorCode_ERROR_CODE_MESSAGE_TOO_LONG {
 		t.Fatalf("long message: %v", err)

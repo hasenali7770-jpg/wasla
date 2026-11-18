@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/chat/chat_store.dart';
 import '../../core/chat/format.dart';
 import '../../core/l10n/app_localizations.dart';
+import '../../core/media/picker.dart';
 import '../../core/net/connection.dart';
 import '../../core/net/rpc_exception.dart';
 import '../../core/providers.dart';
@@ -19,6 +20,22 @@ class ChatsScreen extends ConsumerStatefulWidget {
 
 class _ChatsScreenState extends ConsumerState<ChatsScreen> {
   bool _archived = false;
+
+  /// Picks, uploads and sets a new profile photo.
+  Future<void> _changePhoto() async {
+    final l = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final m = await ref.read(mediaPickerProvider).photo(camera: false);
+      if (m == null) return;
+      await ref.read(chatStoreProvider.notifier).setMyPhoto(m);
+      messenger.showSnackBar(SnackBar(content: Text(l.photoUpdated)));
+    } on RpcException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message(l))));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l.mediaUnavailable)));
+    }
+  }
 
   Future<void> _openSaved() async {
     final store = ref.read(chatStoreProvider.notifier);
@@ -97,8 +114,14 @@ class _ChatsScreenState extends ConsumerState<ChatsScreen> {
               onPressed: () => setState(() => _archived = true),
             ),
           PopupMenuButton<String>(
-            onSelected: (v) => v == 'saved' ? _openSaved() : context.push('/settings/sessions'),
+            key: const Key('main-menu'),
+            onSelected: (v) => switch (v) {
+              'saved' => _openSaved(),
+              'photo' => _changePhoto(),
+              _ => context.push('/settings/sessions'),
+            },
             itemBuilder: (_) => [
+              PopupMenuItem(value: 'photo', child: Text(l.myPhoto)),
               PopupMenuItem(value: 'saved', child: Text(l.savedMessages)),
               PopupMenuItem(value: 'devices', child: Text(l.activeSessions)),
             ],
@@ -162,7 +185,12 @@ class _DialogTile extends StatelessWidget {
     if (typing) {
       sub = l.typing;
     } else if (pending != null) {
-      sub = pending.text;
+      final pm = pending.media;
+      sub = pm == null
+          ? pending.text
+          : pm.isPhoto
+              ? l.photoMsg
+              : l.fileMsg(pm.fileName);
     } else if (top != null) {
       sub = preview(top, l);
     }
@@ -171,7 +199,7 @@ class _DialogTile extends StatelessWidget {
       key: ValueKey('dialog-${entry.chat.id}'),
       onTap: onTap,
       onLongPress: onLongPress,
-      leading: Avatar(name: title, saved: entry.chat.type.value == 2),
+      leading: Avatar(name: title, saved: entry.chat.type.value == 2, user: store.users[entry.chat.peerUserId]),
       title: Row(children: [
         Expanded(child: Text(isolate(title), maxLines: 1, overflow: TextOverflow.ellipsis)),
         if (muted) Icon(Icons.volume_off, size: 16, color: theme.hintColor),

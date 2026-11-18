@@ -39,6 +39,50 @@ func (s *Service) RegisterProfile(r *rpc.Router) {
 	rpc.Register(r, p+"SetUsername", rpc.Private, s.SetUsername)
 	rpc.Register(r, p+"ResolveUsername", rpc.Private, s.ResolveUsername)
 	rpc.Register(r, p+"SearchUsers", rpc.Private, s.SearchUsers)
+	rpc.Register(r, p+"SetProfilePhoto", rpc.Private, s.SetProfilePhoto)
+	rpc.Register(r, p+"DeleteProfilePhoto", rpc.Private, s.DeleteProfilePhoto)
+}
+
+// SetProfilePhoto makes an uploaded photo the caller's current avatar.
+func (s *Service) SetProfilePhoto(ctx context.Context, c *rpc.Caller, req *pb.SetProfilePhotoRequest) (*pb.SetProfilePhotoResponse, error) {
+	me := c.UserID()
+	var ok bool
+	if err := s.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM media_files WHERE id = $1 AND owner_id = $2 AND kind = $3 AND status = 3)`,
+		req.GetMediaId(), me, int16(pb.MediaKind_MEDIA_KIND_PHOTO)).Scan(&ok); err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errs.Invalid("upload a photo first")
+	}
+	if _, err := s.DB.Exec(ctx, `INSERT INTO profile_photos (user_id, media_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, me, req.GetMediaId()); err != nil {
+		return nil, err
+	}
+	if _, err := s.DB.Exec(ctx, `UPDATE users SET photo_id = $2, updated_at = now() WHERE id = $1`, me, req.GetMediaId()); err != nil {
+		return nil, err
+	}
+	u, err := LoadSelf(ctx, s.DB, me)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.SetProfilePhotoResponse{User: u}, nil
+}
+
+// DeleteProfilePhoto removes one of the caller's photos; the previous one
+// (if any) becomes current again.
+func (s *Service) DeleteProfilePhoto(ctx context.Context, c *rpc.Caller, req *pb.DeleteProfilePhotoRequest) (*pb.DeleteProfilePhotoResponse, error) {
+	me := c.UserID()
+	if _, err := s.DB.Exec(ctx, `DELETE FROM profile_photos WHERE user_id = $1 AND media_id = $2`, me, req.GetMediaId()); err != nil {
+		return nil, err
+	}
+	if _, err := s.DB.Exec(ctx, `UPDATE users SET photo_id = (SELECT media_id FROM profile_photos WHERE user_id = $1
+		ORDER BY created_at DESC LIMIT 1), updated_at = now() WHERE id = $1 AND (photo_id = $2 OR photo_id IS NULL)`, me, req.GetMediaId()); err != nil {
+		return nil, err
+	}
+	u, err := LoadSelf(ctx, s.DB, me)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DeleteProfilePhotoResponse{User: u}, nil
 }
 
 func (s *Service) GetUsers(ctx context.Context, c *rpc.Caller, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {
