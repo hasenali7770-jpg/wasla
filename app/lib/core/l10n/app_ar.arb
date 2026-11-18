@@ -18,6 +18,8 @@
   "resendIn": "إعادة الإرسال بعد {seconds, plural, =1{ثانية واحدة} =2{ثانيتين} few{{seconds} ثوانٍ} other{{seconds} ثانية}}",
   "@resendIn": {"placeholders": {"seconds": {"type": "int"}}},
   "resendByCall": "اتصل بي لقراءة الرمز",
+  "devCodeHint": "وضع الاختبار — الرمز: {code}",
+  "@devCodeHint": {"placeholders": {"code": {"type": "String"}}},
   "wrongNumber": "تعديل الرقم",
 
   "passwordTitle": "التحقق بخطوتين",

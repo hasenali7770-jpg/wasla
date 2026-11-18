@@ -72,6 +72,15 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with AuthStep {
             }
           },
         ),
+        if (s.devCode.isNotEmpty)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 8),
+            child: Text(
+              l.devCodeHint(s.devCode),
+              key: const Key('dev-code'),
+              style: TextStyle(color: Theme.of(context).colorScheme.tertiary),
+            ),
+          ),
         const SizedBox(height: 12),
         ErrorText(error),
         if (busy) const Center(child: CircularProgressIndicator()),

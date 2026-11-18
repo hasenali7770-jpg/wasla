@@ -97,6 +97,9 @@ jobs:
       - name: Unit + integration tests (race detector)
         run: go test -race -count=1 ./...
       - run: go build ./cmd/wasla-server
+      - name: Server Docker image builds
+        working-directory: .
+        run: docker build -f backend/Dockerfile -t wasla-server:ci .
 
   app:
     runs-on: ubuntu-24.04
@@ -121,7 +124,7 @@ jobs:
       - run: flutter test
       - name: Build debug APK
         run: flutter build apk --debug
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: wasla-debug-apk
           path: app/build/app/outputs/flutter-apk/app-debug.apk
@@ -172,7 +175,6 @@ jobs:
         working-directory: app
         env:
           WASLA_E2E_URL: ws://127.0.0.1:8080/ws
-          WASLA_E2E_LOG: /tmp/server.log
         run: |
           flutter pub get
           flutter test test/e2e_backend_test.dart

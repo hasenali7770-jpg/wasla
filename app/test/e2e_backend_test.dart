@@ -1,11 +1,9 @@
 // End-to-end test of the app's protocol client against a real wasla-server
 // running with WASLA_ENV=dev. Skipped unless WASLA_E2E_URL is set:
 //
-//   WASLA_E2E_URL=ws://127.0.0.1:8080/ws WASLA_E2E_LOG=/path/to/server.log flutter test test/e2e_backend_test.dart
+//   WASLA_E2E_URL=ws://127.0.0.1:8080/ws flutter test test/e2e_backend_test.dart
 //
-// The dev server logs login codes instead of sending SMS; the test reads the
-// code from that log.
-import 'dart:convert';
+// Dev servers return the login code in SendCodeResponse.dev_code.
 import 'dart:io' as io;
 import 'dart:math';
 
@@ -18,17 +16,6 @@ import 'package:wasla/gen/proto/wasla/v1/common.pbenum.dart';
 import 'package:wasla/gen/proto/wasla/v1/frame.pbenum.dart';
 
 final _url = io.Platform.environment['WASLA_E2E_URL'];
-final _log = io.Platform.environment['WASLA_E2E_LOG'];
-
-String _codeFromLog(String phone) {
-  final lines = io.File(_log!).readAsLinesSync().reversed;
-  for (final line in lines) {
-    if (!line.contains('DEV login code')) continue;
-    final m = jsonDecode(line) as Map<String, dynamic>;
-    if (m['phone'] == phone) return m['code'] as String;
-  }
-  throw StateError('no code for $phone in $_log');
-}
 
 WaslaConnection _conn() => WaslaConnection(
       url: Uri.parse(_url!),
@@ -46,12 +33,14 @@ void main() {
 
     final sent = await api.sendCode(phone, 'dev');
     expect(sent.codeLength, 5);
+    final code = sent.devCode;
+    expect(code, hasLength(5), reason: 'dev servers return the code');
 
     await expectLater(
-      api.signIn(phone, sent.codeHash, '00000' == _codeFromLog(phone) ? '11111' : '00000'),
+      api.signIn(phone, sent.codeHash, code == '00000' ? '11111' : '00000'),
       throwsA(isA<RpcException>().having((e) => e.code, 'code', ErrorCode.ERROR_CODE_PHONE_CODE_INVALID)),
     );
-    final signIn = await api.signIn(phone, sent.codeHash, _codeFromLog(phone));
+    final signIn = await api.signIn(phone, sent.codeHash, code);
     expect(signIn.hasSignUpRequired(), isTrue);
 
     final up = await api.signUp(SignUpRequest(

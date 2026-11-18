@@ -23,7 +23,7 @@ class FakeAuthApi implements AuthApi {
     calls.add('sendCode');
     lastPhone = phone;
     if (phone == '+9647801111111') throw const RpcException(ErrorCode.ERROR_CODE_PHONE_BANNED);
-    return SendCodeResponse(codeHash: 'h', codeLength: 5, resendAfterSeconds: 60);
+    return SendCodeResponse(codeHash: 'h', codeLength: 5, resendAfterSeconds: 60, devCode: '24680');
   }
 
   @override
@@ -90,6 +90,7 @@ void main() {
 
     // Code screen: entering all digits submits automatically.
     expect(find.text('أدخل الرمز'), findsOneWidget);
+    expect(find.text('وضع الاختبار — الرمز: 24680'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('code-field')), '12345');
     await tester.pumpAndSettle();
     expect(api.calls, contains('signIn:12345'));

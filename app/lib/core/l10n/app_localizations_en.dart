@@ -61,6 +61,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resendByCall => 'Call me with the code';
 
   @override
+  String devCodeHint(String code) {
+    return 'Test mode — code: $code';
+  }
+
+  @override
   String get wrongNumber => 'Change number';
 
   @override

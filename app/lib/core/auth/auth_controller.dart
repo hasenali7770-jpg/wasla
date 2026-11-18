@@ -29,12 +29,16 @@ class AuthCodeSent extends AuthState {
     required this.codeLength,
     required this.delivery,
     required this.resendAt,
+    this.devCode = '',
   });
   final String phone;
   final String codeHash;
   final int codeLength;
   final CodeDelivery delivery;
   final DateTime resendAt;
+
+  /// Non-empty only on test servers (shown on screen for testers).
+  final String devCode;
 }
 
 class AuthNeedsSignUp extends AuthState {
@@ -102,6 +106,7 @@ class AuthController extends Notifier<AuthState> {
       codeLength: r.codeLength,
       delivery: r.delivery,
       resendAt: DateTime.now().add(Duration(seconds: r.resendAfterSeconds)),
+      devCode: r.devCode,
     );
   }
 
@@ -115,6 +120,7 @@ class AuthController extends Notifier<AuthState> {
       codeLength: r.codeLength,
       delivery: r.delivery,
       resendAt: DateTime.now().add(Duration(seconds: r.resendAfterSeconds)),
+      devCode: r.devCode,
     );
   }
 

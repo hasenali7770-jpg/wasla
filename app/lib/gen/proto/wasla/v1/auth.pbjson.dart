@@ -108,6 +108,7 @@ const SendCodeResponse$json = {
       '6': '.wasla.v1.CodeDelivery',
       '10': 'nextDelivery'
     },
+    {'1': 'dev_code', '3': 7, '4': 1, '5': 9, '10': 'devCode'},
   ],
 };
 
@@ -118,7 +119,7 @@ final $typed_data.Uint8List sendCodeResponseDescriptor = $convert.base64Decode(
     'Z3RoGAMgASgFUgpjb2RlTGVuZ3RoEjAKFHJlc2VuZF9hZnRlcl9zZWNvbmRzGAQgASgFUhJyZX'
     'NlbmRBZnRlclNlY29uZHMSLAoSZXhwaXJlc19pbl9zZWNvbmRzGAUgASgFUhBleHBpcmVzSW5T'
     'ZWNvbmRzEjsKDW5leHRfZGVsaXZlcnkYBiABKA4yFi53YXNsYS52MS5Db2RlRGVsaXZlcnlSDG'
-    '5leHREZWxpdmVyeQ==');
+    '5leHREZWxpdmVyeRIZCghkZXZfY29kZRgHIAEoCVIHZGV2Q29kZQ==');
 
 @$core.Deprecated('Use resendCodeRequestDescriptor instead')
 const ResendCodeRequest$json = {
@@ -170,6 +171,7 @@ const ResendCodeResponse$json = {
       '6': '.wasla.v1.CodeDelivery',
       '10': 'nextDelivery'
     },
+    {'1': 'dev_code', '3': 7, '4': 1, '5': 9, '10': 'devCode'},
   ],
 };
 
@@ -180,7 +182,7 @@ final $typed_data.Uint8List resendCodeResponseDescriptor = $convert.base64Decode
     'ZW5ndGgYAyABKAVSCmNvZGVMZW5ndGgSMAoUcmVzZW5kX2FmdGVyX3NlY29uZHMYBCABKAVSEn'
     'Jlc2VuZEFmdGVyU2Vjb25kcxIsChJleHBpcmVzX2luX3NlY29uZHMYBSABKAVSEGV4cGlyZXNJ'
     'blNlY29uZHMSOwoNbmV4dF9kZWxpdmVyeRgGIAEoDjIWLndhc2xhLnYxLkNvZGVEZWxpdmVyeV'
-    'IMbmV4dERlbGl2ZXJ5');
+    'IMbmV4dERlbGl2ZXJ5EhkKCGRldl9jb2RlGAcgASgJUgdkZXZDb2Rl');
 
 @$core.Deprecated('Use signInRequestDescriptor instead')
 const SignInRequest$json = {

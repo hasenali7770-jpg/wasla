@@ -1,0 +1,19 @@
+# HTTPS with an automatic Let's Encrypt certificate for <ip>.sslip.io
+# (sslip.io resolves "1-2-3-4.sslip.io" to 1.2.3.4, so no domain is needed).
+{$STAGING_DOMAIN} {
+	handle /ws {
+		reverse_proxy wasla:8080
+	}
+	handle /readyz {
+		reverse_proxy wasla:8080
+	}
+	# Moderation panel (TOTP login). Staging only; production keeps it on a
+	# separate hostname behind an IP allowlist.
+	handle /admin* {
+		reverse_proxy wasla:8081
+	}
+	handle {
+		respond "Wasla staging" 200
+	}
+	header -Server
+}

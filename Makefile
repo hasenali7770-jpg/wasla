@@ -3,7 +3,7 @@ PSQL ?= psql
 COMPOSE = docker compose -f deploy/docker-compose.dev.yml
 DEV_DB ?= postgres://wasla:wasla-dev-only@localhost:5432/wasla
 
-.PHONY: dev-up dev-down proto-lint proto-gen db-migrate db-test backend-test app-test run staff
+.PHONY: dev-up dev-down proto-lint proto-gen db-migrate migrate db-test backend-test app-test run staff
 
 dev-up:            ## start Postgres, Redis, MinIO
 	$(COMPOSE) up -d
@@ -19,6 +19,9 @@ proto-gen:         ## regenerate Go + Dart code from proto/ (needs protoc-gen-go
 
 db-migrate:
 	for f in db/postgres/migrations/*.up.sql; do $(PSQL) "$(DEV_DB)" -v ON_ERROR_STOP=1 -q -f $$f; done
+
+migrate:           ## apply pending migrations with the server's own runner (records them in wasla_migrations)
+	cd backend && WASLA_ENV=dev WASLA_POSTGRES_URL=$(DEV_DB) go run ./cmd/wasla-server migrate
 
 db-test:
 	for f in db/postgres/tests/*.sql; do $(PSQL) "$(DEV_DB)" -v ON_ERROR_STOP=1 -f $$f; done

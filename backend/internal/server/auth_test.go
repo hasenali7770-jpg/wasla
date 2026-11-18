@@ -68,6 +68,9 @@ func TestWrongCodeAndAttemptLimit(t *testing.T) {
 	const ph = "+9647801111111"
 	var sent pb.SendCodeResponse
 	c.mustCall(mSendCode, &pb.SendCodeRequest{Phone: ph, DeviceAttestation: "dev"}, &sent)
+	if sent.DevCode != "" {
+		t.Fatal("the login code must never be returned unless ExposeDevCode is set")
+	}
 	wrong := "00000"
 	if e.sms.LastCode(ph) == wrong {
 		wrong = "11111"

@@ -64,6 +64,10 @@ message SendCodeResponse {
   int32 expires_in_seconds = 5;
   // What ResendCode will use next (e.g. SMS → VOICE_CALL).
   CodeDelivery next_delivery = 6;
+  // The code itself. Only development/staging servers (WASLA_ENV=dev, no
+  // SMS provider) fill this in, so testers can log in; production servers
+  // never set it.
+  string dev_code = 7;
 }
 
 message ResendCodeRequest {
@@ -78,6 +82,8 @@ message ResendCodeResponse {
   int32 resend_after_seconds = 4;
   int32 expires_in_seconds = 5;
   CodeDelivery next_delivery = 6;
+  // See SendCodeResponse.dev_code.
+  string dev_code = 7;
 }
 
 message SignInRequest {

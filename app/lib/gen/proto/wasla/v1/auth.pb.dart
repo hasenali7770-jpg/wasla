@@ -104,6 +104,7 @@ class SendCodeResponse extends $pb.GeneratedMessage {
     $core.int? resendAfterSeconds,
     $core.int? expiresInSeconds,
     CodeDelivery? nextDelivery,
+    $core.String? devCode,
   }) {
     final result = SendCodeResponse._();
     if (codeHash != null) result.codeHash = codeHash;
@@ -113,6 +114,7 @@ class SendCodeResponse extends $pb.GeneratedMessage {
       result.resendAfterSeconds = resendAfterSeconds;
     if (expiresInSeconds != null) result.expiresInSeconds = expiresInSeconds;
     if (nextDelivery != null) result.nextDelivery = nextDelivery;
+    if (devCode != null) result.devCode = devCode;
     return result;
   }
 
@@ -137,6 +139,7 @@ class SendCodeResponse extends $pb.GeneratedMessage {
     ..aI(5, _omitFieldNames ? '' : 'expiresInSeconds')
     ..aE<CodeDelivery>(6, _omitFieldNames ? '' : 'nextDelivery',
         enumValues: CodeDelivery.values)
+    ..aOS(7, _omitFieldNames ? '' : 'devCode')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -216,6 +219,18 @@ class SendCodeResponse extends $pb.GeneratedMessage {
   $core.bool hasNextDelivery() => $_has(5);
   @$pb.TagNumber(6)
   void clearNextDelivery() => $_clearField(6);
+
+  /// The code itself. Only development/staging servers (WASLA_ENV=dev, no
+  /// SMS provider) fill this in, so testers can log in; production servers
+  /// never set it.
+  @$pb.TagNumber(7)
+  $core.String get devCode => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set devCode($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasDevCode() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearDevCode() => $_clearField(7);
 }
 
 class ResendCodeRequest extends $pb.GeneratedMessage {
@@ -295,6 +310,7 @@ class ResendCodeResponse extends $pb.GeneratedMessage {
     $core.int? resendAfterSeconds,
     $core.int? expiresInSeconds,
     CodeDelivery? nextDelivery,
+    $core.String? devCode,
   }) {
     final result = ResendCodeResponse._();
     if (codeHash != null) result.codeHash = codeHash;
@@ -304,6 +320,7 @@ class ResendCodeResponse extends $pb.GeneratedMessage {
       result.resendAfterSeconds = resendAfterSeconds;
     if (expiresInSeconds != null) result.expiresInSeconds = expiresInSeconds;
     if (nextDelivery != null) result.nextDelivery = nextDelivery;
+    if (devCode != null) result.devCode = devCode;
     return result;
   }
 
@@ -328,6 +345,7 @@ class ResendCodeResponse extends $pb.GeneratedMessage {
     ..aI(5, _omitFieldNames ? '' : 'expiresInSeconds')
     ..aE<CodeDelivery>(6, _omitFieldNames ? '' : 'nextDelivery',
         enumValues: CodeDelivery.values)
+    ..aOS(7, _omitFieldNames ? '' : 'devCode')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -405,6 +423,16 @@ class ResendCodeResponse extends $pb.GeneratedMessage {
   $core.bool hasNextDelivery() => $_has(5);
   @$pb.TagNumber(6)
   void clearNextDelivery() => $_clearField(6);
+
+  /// See SendCodeResponse.dev_code.
+  @$pb.TagNumber(7)
+  $core.String get devCode => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set devCode($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasDevCode() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearDevCode() => $_clearField(7);
 }
 
 class SignInRequest extends $pb.GeneratedMessage {

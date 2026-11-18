@@ -15,6 +15,7 @@
   "codeLabel": "Verification code",
   "resendIn": "Resend in {seconds, plural, =1{1 second} other{{seconds} seconds}}",
   "resendByCall": "Call me with the code",
+  "devCodeHint": "Test mode — code: {code}",
   "wrongNumber": "Change number",
 
   "passwordTitle": "Two-step verification",

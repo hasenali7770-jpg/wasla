@@ -49,6 +49,9 @@ type Config struct {
 	// A session younger than this cannot revoke other sessions (limits the
 	// damage of a stolen OTP).
 	NewSessionGuard time.Duration
+	// ExposeDevCode returns the login code in SendCode/ResendCode responses.
+	// Only for WASLA_ENV=dev (local and staging); main.go never sets it in prod.
+	ExposeDevCode bool
 }
 
 // DefaultConfig returns production defaults; secrets must still be set.
@@ -143,7 +146,8 @@ func (s *Service) ResendCode(ctx context.Context, c *rpc.Caller, req *pb.ResendC
 		return nil, err
 	}
 	return &pb.ResendCodeResponse{CodeHash: r.CodeHash, Delivery: r.Delivery, CodeLength: r.CodeLength,
-		ResendAfterSeconds: r.ResendAfterSeconds, ExpiresInSeconds: r.ExpiresInSeconds, NextDelivery: r.NextDelivery}, nil
+		ResendAfterSeconds: r.ResendAfterSeconds, ExpiresInSeconds: r.ExpiresInSeconds, NextDelivery: r.NextDelivery,
+		DevCode: r.DevCode}, nil
 }
 
 func (s *Service) issueCode(ctx context.Context, c *rpc.Caller, ph string, via pb.CodeDelivery) (*pb.SendCodeResponse, error) {
@@ -172,7 +176,12 @@ func (s *Service) issueCode(ctx context.Context, c *rpc.Caller, ph string, via p
 	}
 	s.logOTP(ctx, ph, c, via, provider, 1)
 	next := pb.CodeDelivery_CODE_DELIVERY_VOICE_CALL
+	devCode := ""
+	if s.Cfg.ExposeDevCode {
+		devCode = code
+	}
 	return &pb.SendCodeResponse{
+		DevCode:            devCode,
 		CodeHash:           codeHash,
 		Delivery:           via,
 		CodeLength:         int32(s.Cfg.CodeLength),

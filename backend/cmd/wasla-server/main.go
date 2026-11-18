@@ -5,6 +5,7 @@
 // Usage:
 //
 //	wasla-server                       run the server
+//	wasla-server migrate               apply pending DB migrations (WASLA_MIGRATIONS_DIR)
 //	wasla-server staff create --email E --name N --role 1|2|3
 package main
 
@@ -27,6 +28,7 @@ import (
 	"wasla/backend/internal/moderation"
 	"wasla/backend/internal/platform/config"
 	"wasla/backend/internal/platform/db"
+	"wasla/backend/internal/platform/migrate"
 	"wasla/backend/internal/platform/password"
 	"wasla/backend/internal/platform/snowflake"
 	"wasla/backend/internal/server"
@@ -57,6 +59,18 @@ func run(log *slog.Logger, args []string) error {
 	if len(args) >= 2 && args[0] == "staff" && args[1] == "create" {
 		return staffCreate(ctx, pool, args[2:])
 	}
+	if len(args) >= 1 && args[0] == "migrate" {
+		dir := os.Getenv("WASLA_MIGRATIONS_DIR")
+		if dir == "" {
+			dir = "../db/postgres/migrations"
+		}
+		applied, err := migrate.Up(ctx, pool, dir)
+		if err != nil {
+			return err
+		}
+		log.Info("migrations applied", "versions", applied)
+		return nil
+	}
 
 	ropt, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
@@ -82,6 +96,7 @@ func run(log *slog.Logger, args []string) error {
 	}
 	authCfg := auth.DefaultConfig()
 	authCfg.CodeSecret, authCfg.PhonePepper = cfg.CodeSecret, cfg.PhonePepper
+	authCfg.ExposeDevCode = cfg.Env == "dev"
 
 	srv, err := server.New(ctx, server.Deps{
 		DB: pool, Redis: rdb, Log: log, IDs: ids, SMS: sms, Attestor: attestor, AuthCfg: authCfg,

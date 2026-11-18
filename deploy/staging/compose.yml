@@ -1,0 +1,69 @@
+# Staging stack. Deployed by .github/workflows/deploy-staging.yml into
+# /opt/wasla on the server; secrets come from /opt/wasla/.env (created once by
+# cloud-init.yaml) and STAGING_DOMAIN from the deploy job.
+name: wasla-staging
+
+x-wasla-env: &wasla-env
+  # dev = test mode: no SMS is sent, the login code is returned to the app.
+  WASLA_ENV: dev
+  WASLA_POSTGRES_URL: postgres://wasla:${POSTGRES_PASSWORD:?}@postgres:5432/wasla?sslmode=disable
+  WASLA_REDIS_URL: redis://redis:6379/0
+  WASLA_HTTP_ADDR: ":8080"
+  WASLA_ADMIN_ADDR: ":8081"
+  WASLA_TRUST_PROXY: "true"
+  WASLA_CODE_SECRET: ${CODE_SECRET:?}
+  WASLA_PHONE_PEPPER: ${PHONE_PEPPER:?}
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: wasla
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: wasla
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "wasla"]
+      interval: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    restart: unless-stopped
+
+  migrate:
+    image: wasla-server:staging
+    command: ["migrate"]
+    environment: *wasla-env
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+
+  wasla:
+    image: wasla-server:staging
+    environment:
+      <<: *wasla-env
+      WASLA_ORIGIN_PATTERNS: ${STAGING_DOMAIN:?}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_started}
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    environment:
+      STAGING_DOMAIN: ${STAGING_DOMAIN:?}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [wasla]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

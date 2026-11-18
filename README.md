@@ -14,6 +14,8 @@ A cloud messaging app for Android, iOS, web and desktop. Arabic (RTL) is the def
 | 3 | [Protocol](docs/03-protocol.md) | Transports, connection lifecycle, RPC, updates and gap rule, idempotency, media, versioning |
 | 4 | [Decision records](docs/04-decisions.md) | ADR-001 to ADR-009 |
 | 5 | [Moderation and legal requests](docs/05-moderation.md) | Report flow, deadlines, roles, admin panel, authority requests |
+| — | [Onboarding (engineers)](docs/onboarding.md) | Read order, local setup, conventions, servers, known gaps |
+| — | [Staging setup (owner)](docs/staging-setup.md) | Create the test server and install the APK on your phone |
 
 ## Repository layout
 
@@ -36,8 +38,9 @@ wasla/
 │       └── testutil/              real Postgres + in-memory Redis for tests
 ├── app/                           Flutter client (Android first; layout in app/README.md)
 ├── deploy/
-│   └── docker-compose.dev.yml     Postgres, Redis, MinIO for local development
-├── .github/workflows/ci.yml       buf lint/breaking · migrations + smoke tests · go vet/test/build
+│   ├── docker-compose.dev.yml     Postgres, Redis, MinIO for local development
+│   └── staging/                   compose + Caddy (HTTPS) + cloud-init for the staging server
+├── .github/workflows/            ci.yml (all checks, debug APK) · deploy-staging.yml (staging + staging APK)
 └── Makefile
 ```
 

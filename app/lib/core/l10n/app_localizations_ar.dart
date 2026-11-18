@@ -63,6 +63,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get resendByCall => 'اتصل بي لقراءة الرمز';
 
   @override
+  String devCodeHint(String code) {
+    return 'وضع الاختبار — الرمز: $code';
+  }
+
+  @override
   String get wrongNumber => 'تعديل الرقم';
 
   @override

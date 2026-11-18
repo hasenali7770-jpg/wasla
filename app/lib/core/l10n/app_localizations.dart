@@ -176,6 +176,12 @@ abstract class AppLocalizations {
   /// **'اتصل بي لقراءة الرمز'**
   String get resendByCall;
 
+  /// No description provided for @devCodeHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'وضع الاختبار — الرمز: {code}'**
+  String devCodeHint(String code);
+
   /// No description provided for @wrongNumber.
   ///
   /// In ar, this message translates to:

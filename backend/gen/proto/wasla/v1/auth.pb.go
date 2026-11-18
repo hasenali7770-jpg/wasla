@@ -190,7 +190,11 @@ type SendCodeResponse struct {
 	ResendAfterSeconds int32        `protobuf:"varint,4,opt,name=resend_after_seconds,json=resendAfterSeconds,proto3" json:"resend_after_seconds,omitempty"`
 	ExpiresInSeconds   int32        `protobuf:"varint,5,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
 	// What ResendCode will use next (e.g. SMS → VOICE_CALL).
-	NextDelivery  CodeDelivery `protobuf:"varint,6,opt,name=next_delivery,json=nextDelivery,proto3,enum=wasla.v1.CodeDelivery" json:"next_delivery,omitempty"`
+	NextDelivery CodeDelivery `protobuf:"varint,6,opt,name=next_delivery,json=nextDelivery,proto3,enum=wasla.v1.CodeDelivery" json:"next_delivery,omitempty"`
+	// The code itself. Only development/staging servers (WASLA_ENV=dev, no
+	// SMS provider) fill this in, so testers can log in; production servers
+	// never set it.
+	DevCode       string `protobuf:"bytes,7,opt,name=dev_code,json=devCode,proto3" json:"dev_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -267,6 +271,13 @@ func (x *SendCodeResponse) GetNextDelivery() CodeDelivery {
 	return CodeDelivery_CODE_DELIVERY_UNSPECIFIED
 }
 
+func (x *SendCodeResponse) GetDevCode() string {
+	if x != nil {
+		return x.DevCode
+	}
+	return ""
+}
+
 type ResendCodeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Phone         string                 `protobuf:"bytes,1,opt,name=phone,proto3" json:"phone,omitempty"`
@@ -327,8 +338,10 @@ type ResendCodeResponse struct {
 	ResendAfterSeconds int32                  `protobuf:"varint,4,opt,name=resend_after_seconds,json=resendAfterSeconds,proto3" json:"resend_after_seconds,omitempty"`
 	ExpiresInSeconds   int32                  `protobuf:"varint,5,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
 	NextDelivery       CodeDelivery           `protobuf:"varint,6,opt,name=next_delivery,json=nextDelivery,proto3,enum=wasla.v1.CodeDelivery" json:"next_delivery,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// See SendCodeResponse.dev_code.
+	DevCode       string `protobuf:"bytes,7,opt,name=dev_code,json=devCode,proto3" json:"dev_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ResendCodeResponse) Reset() {
@@ -401,6 +414,13 @@ func (x *ResendCodeResponse) GetNextDelivery() CodeDelivery {
 		return x.NextDelivery
 	}
 	return CodeDelivery_CODE_DELIVERY_UNSPECIFIED
+}
+
+func (x *ResendCodeResponse) GetDevCode() string {
+	if x != nil {
+		return x.DevCode
+	}
+	return ""
 }
 
 type SignInRequest struct {
@@ -1638,7 +1658,7 @@ const file_wasla_v1_auth_proto_rawDesc = "" +
 	"\x13wasla/v1/auth.proto\x12\bwasla.v1\x1a\x15wasla/v1/common.proto\x1a\x14wasla/v1/users.proto\"V\n" +
 	"\x0fSendCodeRequest\x12\x14\n" +
 	"\x05phone\x18\x01 \x01(\tR\x05phone\x12-\n" +
-	"\x12device_attestation\x18\x02 \x01(\tR\x11deviceAttestation\"\xa1\x02\n" +
+	"\x12device_attestation\x18\x02 \x01(\tR\x11deviceAttestation\"\xbc\x02\n" +
 	"\x10SendCodeResponse\x12\x1b\n" +
 	"\tcode_hash\x18\x01 \x01(\tR\bcodeHash\x122\n" +
 	"\bdelivery\x18\x02 \x01(\x0e2\x16.wasla.v1.CodeDeliveryR\bdelivery\x12\x1f\n" +
@@ -1646,10 +1666,11 @@ const file_wasla_v1_auth_proto_rawDesc = "" +
 	"codeLength\x120\n" +
 	"\x14resend_after_seconds\x18\x04 \x01(\x05R\x12resendAfterSeconds\x12,\n" +
 	"\x12expires_in_seconds\x18\x05 \x01(\x05R\x10expiresInSeconds\x12;\n" +
-	"\rnext_delivery\x18\x06 \x01(\x0e2\x16.wasla.v1.CodeDeliveryR\fnextDelivery\"F\n" +
+	"\rnext_delivery\x18\x06 \x01(\x0e2\x16.wasla.v1.CodeDeliveryR\fnextDelivery\x12\x19\n" +
+	"\bdev_code\x18\a \x01(\tR\adevCode\"F\n" +
 	"\x11ResendCodeRequest\x12\x14\n" +
 	"\x05phone\x18\x01 \x01(\tR\x05phone\x12\x1b\n" +
-	"\tcode_hash\x18\x02 \x01(\tR\bcodeHash\"\xa3\x02\n" +
+	"\tcode_hash\x18\x02 \x01(\tR\bcodeHash\"\xbe\x02\n" +
 	"\x12ResendCodeResponse\x12\x1b\n" +
 	"\tcode_hash\x18\x01 \x01(\tR\bcodeHash\x122\n" +
 	"\bdelivery\x18\x02 \x01(\x0e2\x16.wasla.v1.CodeDeliveryR\bdelivery\x12\x1f\n" +
@@ -1657,7 +1678,8 @@ const file_wasla_v1_auth_proto_rawDesc = "" +
 	"codeLength\x120\n" +
 	"\x14resend_after_seconds\x18\x04 \x01(\x05R\x12resendAfterSeconds\x12,\n" +
 	"\x12expires_in_seconds\x18\x05 \x01(\x05R\x10expiresInSeconds\x12;\n" +
-	"\rnext_delivery\x18\x06 \x01(\x0e2\x16.wasla.v1.CodeDeliveryR\fnextDelivery\"V\n" +
+	"\rnext_delivery\x18\x06 \x01(\x0e2\x16.wasla.v1.CodeDeliveryR\fnextDelivery\x12\x19\n" +
+	"\bdev_code\x18\a \x01(\tR\adevCode\"V\n" +
 	"\rSignInRequest\x12\x14\n" +
 	"\x05phone\x18\x01 \x01(\tR\x05phone\x12\x1b\n" +
 	"\tcode_hash\x18\x02 \x01(\tR\bcodeHash\x12\x12\n" +

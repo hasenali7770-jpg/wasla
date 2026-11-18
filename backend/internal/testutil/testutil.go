@@ -10,13 +10,14 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+
+	"wasla/backend/internal/platform/migrate"
 )
 
 // Postgres returns a pool on a new, migrated database that is dropped when
@@ -52,19 +53,14 @@ func Postgres(t *testing.T) *pgxpool.Pool {
 		_, _ = admin.Exec(context.Background(), "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
 		_ = admin.Close(context.Background())
 	})
-	for _, f := range migrations(t) {
-		sql, err := os.ReadFile(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err := pool.Exec(ctx, string(sql)); err != nil {
-			t.Fatalf("migration %s: %v", filepath.Base(f), err)
-		}
+	if _, err := migrate.Up(ctx, pool, MigrationsDir(t)); err != nil {
+		t.Fatal(err)
 	}
 	return pool
 }
 
-func migrations(t *testing.T) []string {
+// MigrationsDir finds db/postgres/migrations above the working directory.
+func MigrationsDir(t *testing.T) string {
 	dir, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -72,9 +68,7 @@ func migrations(t *testing.T) []string {
 	for {
 		m := filepath.Join(dir, "db", "postgres", "migrations")
 		if st, err := os.Stat(m); err == nil && st.IsDir() {
-			files, _ := filepath.Glob(filepath.Join(m, "*.up.sql"))
-			sort.Strings(files)
-			return files
+			return m
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
