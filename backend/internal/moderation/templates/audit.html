@@ -1,0 +1,13 @@
+{{define "title"}}سجل الإجراءات{{end}}
+{{define "content"}}
+<h1>سجل الإجراءات</h1>
+<p class="muted">آخر 200 إجراء. السجل لا يُعدَّل ولا يُحذف.</p>
+{{if .Actions}}<table><thead><tr><th>التاريخ</th><th>الإجراء</th><th>المشرف</th><th>المستخدم</th><th>المحادثة</th><th>الرسائل</th><th>بلاغ</th><th>طلب رسمي</th><th>السبب</th></tr></thead><tbody>
+{{range .Actions}}<tr><td>{{ts .CreatedAt}}</td><td>{{action .Action}}</td><td>{{.Staff}}</td>
+<td>{{if .TargetUserID}}<a href="/admin/users/{{deref .TargetUserID}}">{{deref .TargetUserID}}</a>{{end}}</td>
+<td>{{if .ChatID}}{{deref .ChatID}}{{end}}</td><td>{{.Seqs}}</td>
+<td>{{if .ReportID}}<a href="/admin/reports/{{deref .ReportID}}">{{deref .ReportID}}</a>{{end}}</td>
+<td>{{if .LegalID}}<a href="/admin/legal/{{deref .LegalID}}">{{deref .LegalID}}</a>{{end}}</td>
+<td><bdi>{{.Reason}}</bdi></td></tr>{{end}}
+</tbody></table>{{else}}<p class="empty">لا توجد إجراءات بعد.</p>{{end}}
+{{end}}

@@ -1,0 +1,12 @@
+version: v2
+# Go code for the backend. Plugin: protoc-gen-go v1.36.6
+#   go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: wasla/backend/gen/proto
+plugins:
+  - local: protoc-gen-go
+    out: ../backend/gen/proto
+    opt: paths=source_relative

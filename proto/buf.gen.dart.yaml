@@ -1,0 +1,6 @@
+version: v2
+# Dart code for the Flutter app. Plugin: protoc_plugin 25.1.0 (pairs with protobuf 6.1.0)
+#   dart pub global activate protoc_plugin 25.1.0
+plugins:
+  - local: protoc-gen-dart
+    out: ../app/lib/gen/proto

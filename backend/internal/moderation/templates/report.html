@@ -1,0 +1,60 @@
+{{define "title"}}بلاغ {{.R.ID}}{{end}}
+{{define "content"}}
+{{$csrf := .Session.CSRF}}
+<p><a href="/admin/">← العودة إلى الطابور</a></p>
+<h1>بلاغ رقم {{.R.ID}} <span class="badge p{{.R.Priority}}">{{priority .R.Priority}}</span></h1>
+<section class="card">
+  <dl class="grid">
+    <dt>السبب</dt><dd>{{reason .R.Reason}}</dd>
+    <dt>الحالة</dt><dd>{{status .R.Status}}{{if .R.Resolution}} — {{.R.Resolution}}{{end}}</dd>
+    <dt>وصل في</dt><dd>{{ts .R.CreatedAt}}</dd>
+    <dt>المهلة</dt><dd class="{{if overdue .R.DueAt}}overdue-text{{end}}">{{ts .R.DueAt}}</dd>
+    <dt>المُبلِّغ</dt><dd><a href="/admin/users/{{.R.ReporterID}}">{{.R.ReporterID}}</a></dd>
+    <dt>المُبلَّغ عنه</dt><dd>{{if .R.TargetUserID}}<a href="/admin/users/{{deref .R.TargetUserID}}">{{.R.TargetName}} ({{deref .R.TargetUserID}})</a>{{else}}—{{end}}</dd>
+    {{with .Prior}}<dt>سجلّه</dt><dd>{{.Reports}} بلاغات أخرى · {{.Actions}} إجراءات سابقة</dd>{{end}}
+    <dt>تعليق المُبلِّغ</dt><dd>{{if .R.Comment}}<bdi>{{.R.Comment}}</bdi>{{else}}—{{end}}</dd>
+  </dl>
+</section>
+
+<h2>الأدلة (نسخة محفوظة وقت البلاغ)</h2>
+{{with .Evidence.Chat}}<p>المحادثة: <bdi>{{.Title}}</bdi> · رقم {{.ID}} · {{.MemberCount}} عضو</p>{{end}}
+{{if .Evidence.Messages}}
+<table>
+  <thead><tr><th>رقم الرسالة</th><th>المرسل</th><th>التاريخ</th><th>النص</th><th>وسائط</th></tr></thead>
+  <tbody>
+  {{range .Evidence.Messages}}
+  <tr><td>{{.Seq}}</td><td><a href="/admin/users/{{.SenderID}}">{{.SenderID}}</a></td><td>{{unix .Date}}</td>
+      <td class="msg"><bdi>{{.Text}}</bdi>{{if .Deleted}} <span class="muted">(محذوفة)</span>{{end}}</td>
+      <td>{{if .MediaID}}{{.MediaID}}{{end}}</td></tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}<p class="muted">لا توجد رسائل محفوظة.</p>{{end}}
+
+{{if eq .R.Status 1}}
+<section class="card">
+  <h2>اتخاذ إجراء</h2>
+  <form method="post" action="/admin/reports/{{.R.ID}}/assign" class="inline">
+    <input type="hidden" name="csrf" value="{{$csrf}}"><button class="secondary">تولّي هذا البلاغ</button>
+  </form>
+  <form method="post" action="/admin/reports/{{.R.ID}}/action">
+    <input type="hidden" name="csrf" value="{{$csrf}}">
+    <fieldset>
+      <label><input type="radio" name="action" value="dismiss" required> رفض البلاغ (لا مخالفة)</label>
+      {{if .Seqs}}<label><input type="radio" name="action" value="delete_messages"> حذف الرسائل المُبلَّغ عنها للجميع</label>{{end}}
+      {{if and .Seqs .R.TargetUserID}}<label><input type="radio" name="action" value="delete_and_ban"> حذف الرسائل وحظر المرسل</label>{{end}}
+      {{if .R.TargetUserID}}<label><input type="radio" name="action" value="ban_user"> حظر المستخدم</label>{{end}}
+      {{if and .R.ChatID (ge .Session.Staff.Role 2)}}<label><input type="radio" name="action" value="ban_chat"> إغلاق المحادثة بالكامل</label>{{end}}
+    </fieldset>
+    <label>مدة الحظر
+      <select name="duration">
+        <option value="1d">يوم واحد</option><option value="7d">7 أيام</option>
+        {{if ge .Session.Staff.Role 2}}<option value="30d">30 يوماً</option><option value="perm">دائم</option>{{end}}
+      </select>
+    </label>
+    <label>السبب (يُحفظ في سجل الإجراءات) <textarea name="reason" required minlength="3" rows="3"></textarea></label>
+    <button>تنفيذ</button>
+  </form>
+</section>
+{{end}}
+{{end}}

@@ -1,6 +1,4 @@
-# Generated code (regenerate with `make proto-gen`)
-backend/gen/
-app/lib/gen/
+# Generated protobuf code IS committed (CI checks it is fresh).
 # Go
 backend/bin/
 # Flutter

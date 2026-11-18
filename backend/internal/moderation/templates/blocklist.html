@@ -1,0 +1,19 @@
+{{define "title"}}الوسائط المحظورة{{end}}
+{{define "content"}}
+<h1>قائمة الوسائط المحظورة</h1>
+<p class="muted">أي ملف يطابق بصمته (SHA-256) هذه القائمة يُرفض عند الرفع ويُفتح له بلاغ حرج تلقائياً.</p>
+{{if ge .Session.Staff.Role 2}}
+<section class="card">
+  <form method="post" action="/admin/blocklist">
+    <input type="hidden" name="csrf" value="{{.Session.CSRF}}">
+    <label>بصمة SHA-256 <input name="sha256" required pattern="[0-9a-fA-F]{64}" dir="ltr"></label>
+    <label>السبب <select name="reason"><option value="5">إساءة للأطفال</option><option value="4">إرهاب</option><option value="3">عنف</option><option value="6">محتوى إباحي</option><option value="12">أخرى</option></select></label>
+    <label>ملاحظة <input name="note"></label>
+    <button>إضافة</button>
+  </form>
+</section>
+{{end}}
+{{if .Entries}}<table><thead><tr><th>البصمة</th><th>السبب</th><th>ملاحظة</th><th>أُضيفت</th></tr></thead><tbody>
+{{range .Entries}}<tr><td dir="ltr" class="mono">{{.SHA}}</td><td>{{reason .Reason}}</td><td><bdi>{{.Note}}</bdi></td><td>{{ts .CreatedAt}}</td></tr>{{end}}
+</tbody></table>{{else}}<p class="empty">القائمة فارغة.</p>{{end}}
+{{end}}
