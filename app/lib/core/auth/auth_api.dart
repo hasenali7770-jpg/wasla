@@ -13,6 +13,9 @@ abstract interface class AuthApi {
   Future<User> getMe();
   Future<List<Session>> listSessions();
   Future<void> revokeSession(Session s);
+
+  /// Tells the server where to send this device's push notifications.
+  Future<void> registerPushToken(String token);
 }
 
 class RemoteAuthApi implements AuthApi {
@@ -69,5 +72,12 @@ class RemoteAuthApi implements AuthApi {
         '${_a}RevokeSession',
         RevokeSessionRequest(sessionId: s.id),
         RevokeSessionResponse.fromBuffer,
+      );
+
+  @override
+  Future<void> registerPushToken(String token) => conn.call(
+        '${_a}RegisterPushToken',
+        RegisterPushTokenRequest(provider: PushProvider.PUSH_PROVIDER_FCM, token: token),
+        RegisterPushTokenResponse.fromBuffer,
       );
 }

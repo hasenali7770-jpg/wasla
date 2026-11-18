@@ -20,6 +20,10 @@ import 'fakes/fake_chat_api.dart';
 /// Scripted AuthService for UI tests.
 class FakeAuthApi implements AuthApi {
   final calls = <String>[];
+  final pushTokens = <String>[];
+
+  @override
+  Future<void> registerPushToken(String token) async => pushTokens.add(token);
   String? lastPhone;
 
   @override

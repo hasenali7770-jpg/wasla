@@ -19,6 +19,7 @@ import (
 	"wasla/backend/internal/moderation"
 	"wasla/backend/internal/platform/ratelimit"
 	"wasla/backend/internal/platform/rpc"
+	"wasla/backend/internal/push"
 	"wasla/backend/internal/updates"
 	"wasla/backend/internal/users"
 )
@@ -35,6 +36,8 @@ type Deps struct {
 	SLA      moderation.SLA
 	// AlertWebhookURL (optional) receives critical-report alerts.
 	AlertWebhookURL string
+	// Push (optional) sends notifications to users with no connected device.
+	Push push.Sender
 	// Storage (optional) enables photos and files.
 	Storage  *media.Storage
 	MediaCfg media.Config
@@ -57,6 +60,7 @@ type Server struct {
 	Admin   *moderation.Admin
 	Reports *moderation.Reports
 	Media   *media.Service
+	Push    *push.Notifier
 	deps    Deps
 }
 
@@ -77,6 +81,11 @@ func NewRouter(mods ...Registrar) (*rpc.Router, error) {
 func New(ctx context.Context, d Deps) (*Server, error) {
 	limits := &ratelimit.Limiter{R: d.Redis, Now: d.Now}
 	upd := &updates.Service{DB: d.DB, Redis: d.Redis, Now: d.Now}
+	var notifier *push.Notifier
+	if d.Push != nil {
+		notifier = &push.Notifier{DB: d.DB, Sender: d.Push, Log: d.Log}
+		upd.Offline = notifier.Offline
+	}
 	authSvc := &auth.Service{DB: d.DB, Redis: d.Redis, IDs: d.IDs, SMS: d.SMS, Attestor: d.Attestor,
 		Limits: limits, Cfg: d.AuthCfg, Log: d.Log, Now: d.Now}
 	usersSvc := &users.Service{DB: d.DB}
@@ -111,7 +120,7 @@ func New(ctx context.Context, d Deps) (*Server, error) {
 	admin := &moderation.Admin{DB: d.DB, Redis: d.Redis, Actions: actions, Limits: limits, Log: d.Log,
 		Now: d.Now, SecureCookie: d.SecureCookies}
 	return &Server{Router: router, Gateway: gw, Hub: hub, Auth: authSvc, Updates: upd, Actions: actions, Admin: admin,
-		Reports: reports, Media: mediaSvc, deps: d}, nil
+		Reports: reports, Media: mediaSvc, Push: notifier, deps: d}, nil
 }
 
 // PublicHandler serves the client-facing endpoints.

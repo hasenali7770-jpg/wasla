@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/l10n/app_localizations.dart';
 import '../core/providers.dart';
+import 'lifecycle.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -28,6 +29,7 @@ class WaslaApp extends ConsumerWidget {
       theme: waslaTheme(Brightness.light),
       darkTheme: waslaTheme(Brightness.dark),
       debugShowCheckedModeBanner: false,
+      builder: (_, child) => AppLifecycle(child: child ?? const SizedBox.shrink()),
     );
   }
 }

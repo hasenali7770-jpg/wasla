@@ -124,6 +124,11 @@ jobs:
         run: tool/check_rtl.sh
       - run: flutter analyze
       - run: flutter test
+      - name: Firebase config (push notifications)
+        # From the GOOGLE_SERVICES_JSON secret; without it the APK has no push.
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printf '%s' "$GOOGLE_SERVICES_JSON" | python3 tool/firebase_config.py
       - name: Build debug APK
         # Retried: Gradle's plugin download sometimes fails on a network blip.
         run: |

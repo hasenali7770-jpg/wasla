@@ -62,10 +62,12 @@ one and revoke the old one.
 
 ## 5. What happens next (my side)
 
-- CI writes `google-services.json` into the app at build time. It is never
-  committed to the repository.
+- CI turns `google-services.json` into Android settings at build time
+  (`app/tool/firebase_config.py`). It is never committed. A build without
+  the secret works normally, just without push.
 - The deploy workflow copies the service-account key to the staging server
-  as a file only the server can read (`/opt/wasla/fcm.json`, mode 600).
+  as a file only the server can read (`/opt/wasla/secrets/fcm.json`, read-only
+  for the server's own user). It goes over SSH and never appears in logs.
 - **Privacy:** a push carries no message text and no sender name, only "you
   have new messages" plus the chat ID. The phone then fetches the message
   over our own encrypted connection. So Google never sees message content.

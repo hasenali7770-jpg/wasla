@@ -5,6 +5,8 @@ name: deploy-staging
 #   STAGING_HOST     the server's IPv4 address
 #   STAGING_SSH_KEY  private key for the "deploy" user created by cloud-init
 # Without them the workflow does nothing and says so.
+# Optional: FCM_SERVICE_ACCOUNT_JSON (push notifications, docs/firebase-setup.md)
+# and GOOGLE_SERVICES_JSON (built into the staging APK).
 on:
   workflow_run:
     workflows: [ci]
@@ -29,6 +31,7 @@ jobs:
     env:
       STAGING_HOST: ${{ secrets.STAGING_HOST }}
       STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+      FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
     steps:
       - name: Check configuration
         id: cfg
@@ -70,6 +73,22 @@ jobs:
           # Secrets added in later versions are generated once on the server.
           ssh deploy@"$HOST" 'cd /opt/wasla && (grep -q "^S3_SECRET=" .env || echo "S3_SECRET=$(openssl rand -hex 24)" >> .env)'
 
+      - name: Push notification key
+        if: steps.cfg.outputs.configured == 'true'
+        # Sent over SSH stdin (never on a command line or in logs). The file is
+        # readable only by the server's container user (uid 65532).
+        run: |
+          # Folder: owned by deploy, others may only traverse it (711).
+          # File: owned by the container user, read-only (400). Replacing it
+          # means deleting it first, which deploy can do as the folder owner.
+          ssh deploy@"$HOST" 'mkdir -p /opt/wasla/secrets && chmod 711 /opt/wasla/secrets && rm -f /opt/wasla/secrets/fcm.json && sed -i "/^FCM_FILE=/d" /opt/wasla/.env'
+          if [ -z "$FCM_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::warning::FCM_SERVICE_ACCOUNT_JSON not set: push notifications stay off on staging."
+            exit 0
+          fi
+          printf '%s' "$FCM_SERVICE_ACCOUNT_JSON" | ssh deploy@"$HOST" 'umask 077 && cat > /opt/wasla/secrets/fcm.json'
+          ssh deploy@"$HOST" 'docker run --rm -v /opt/wasla/secrets:/s redis:7.4-alpine sh -c "chown 65532:65532 /s/fcm.json && chmod 400 /s/fcm.json" && echo FCM_FILE=/run/wasla-secrets/fcm.json >> /opt/wasla/.env'
+
       - name: Start / update
         if: steps.cfg.outputs.configured == 'true'
         run: ssh deploy@"$HOST" 'cd /opt/wasla && docker compose up -d --remove-orphans && docker image prune -f >/dev/null'
@@ -106,6 +125,11 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: Firebase config (push notifications)
+        # From the GOOGLE_SERVICES_JSON secret; without it the APK has no push.
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printf '%s' "$GOOGLE_SERVICES_JSON" | python3 tool/firebase_config.py
       - name: Build staging APK
         # Retried: Gradle's plugin download sometimes fails on a network blip.
         run: |

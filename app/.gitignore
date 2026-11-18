@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Firebase config generated in CI from the GOOGLE_SERVICES_JSON secret.
+android/app/google-services.json
+android/app/src/main/res/values/firebase_config.xml

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wasla</string>
+    <string name="push_title">Wasla</string>
+    <string name="push_new_message">You have a new message</string>
+    <string name="channel_messages">Messages</string>
 </resources>
