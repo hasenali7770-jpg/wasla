@@ -22,6 +22,8 @@ dependencies:
   web_socket_channel: 3.0.3
   flutter_secure_storage: 11.2.0
   phone_numbers_parser: 9.0.29
+  sqlite3: 3.8.0
+  path_provider: 2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -31,15 +33,15 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
-  # IBM Plex Sans Arabic (SIL OFL 1.1, assets/fonts/OFL-IBMPlexSansArabic.txt).
+  # Cairo (SIL OFL 1.1, assets/fonts/OFL-Cairo.txt), the brand font (brand kit v2).
   # Bundled so Arabic renders correctly offline and on every platform.
   fonts:
-    - family: IBMPlexSansArabic
+    - family: Cairo
       fonts:
-        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
-        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+        - asset: assets/fonts/Cairo_400Regular.ttf
+        - asset: assets/fonts/Cairo_500Medium.ttf
           weight: 500
-        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+        - asset: assets/fonts/Cairo_600SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+        - asset: assets/fonts/Cairo_700Bold.ttf
           weight: 700

@@ -1,5 +1,6 @@
 import 'package:fixnum/fixnum.dart';
 import 'package:wasla/core/chat/chat_api.dart';
+import 'package:wasla/core/net/rpc_exception.dart';
 import 'package:wasla/gen/proto/wasla/v1/chats.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/contacts.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/messages.pb.dart';
@@ -17,22 +18,38 @@ class FakeChatApi implements ChatApi {
   final differenceCalls = <Int64>[];
   GetDifferenceResponse Function(Int64 pts)? difference;
   int _seq = 100;
+  int listCalls = 0;
+
+  /// Simulates no network: list, difference and send fail.
+  bool offline = false;
+
+  void _net() {
+    if (offline) throw RpcException.network();
+  }
 
   @override
-  Future<ListDialogsResponse> listDialogs({Int64? offsetDate, Int64? offsetChatId}) async => dialogs;
+  Future<ListDialogsResponse> listDialogs({Int64? offsetDate, Int64? offsetChatId}) async {
+    _net();
+    listCalls++;
+    return dialogs;
+  }
 
   @override
   Future<GetDifferenceResponse> getDifference(Int64 pts) async {
+    _net();
     differenceCalls.add(pts);
     return difference?.call(pts) ?? GetDifferenceResponse(pts: pts);
   }
 
   @override
-  Future<GetHistoryResponse> getHistory(Int64 chatId, {Int64? beforeSeq, int limit = 50}) async =>
-      GetHistoryResponse(messages: (history[chatId] ?? []).reversed, users: dialogs.users);
+  Future<GetHistoryResponse> getHistory(Int64 chatId, {Int64? beforeSeq, int limit = 50}) async {
+    _net();
+    return GetHistoryResponse(messages: (history[chatId] ?? []).reversed, users: dialogs.users);
+  }
 
   @override
   Future<SendMessageResponse> send(SendMessageRequest req) async {
+    _net();
     sent.add(req);
     final chatId = dialogs.chats.isEmpty ? Int64(1) : dialogs.chats.first.id;
     final m = Message(
