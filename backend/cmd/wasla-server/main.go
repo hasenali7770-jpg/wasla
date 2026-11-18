@@ -101,7 +101,7 @@ func run(log *slog.Logger, args []string) error {
 	srv, err := server.New(ctx, server.Deps{
 		DB: pool, Redis: rdb, Log: log, IDs: ids, SMS: sms, Attestor: attestor, AuthCfg: authCfg,
 		SLA: moderation.DefaultSLA, MinAppVersion: cfg.MinAppVersion, TrustProxy: cfg.TrustProxy,
-		OriginPatterns: cfg.OriginPatterns, SecureCookies: cfg.Env != "dev",
+		OriginPatterns: cfg.OriginPatterns, SecureCookies: cfg.Env != "dev", AlertWebhookURL: cfg.AlertWebhookURL,
 	})
 	if err != nil {
 		return err

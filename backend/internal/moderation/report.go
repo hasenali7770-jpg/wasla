@@ -52,6 +52,8 @@ type Reports struct {
 	SLA    SLA
 	Log    *slog.Logger
 	Now    func() time.Time
+	// Alert (optional) notifies the on-call moderator of critical reports.
+	Alert Alerter
 }
 
 func (s *Reports) Register(r *rpc.Router) {
@@ -191,6 +193,7 @@ func (s *Reports) Report(ctx context.Context, c *rpc.Caller, req *pb.ReportReque
 	}
 
 	var id int64
+	var reused bool
 	err = db.InTx(ctx, s.DB, func(tx pgx.Tx) error {
 		// One open report per reporter and target per day: repeat taps return
 		// the same report instead of flooding the queue.
@@ -201,6 +204,7 @@ func (s *Reports) Report(ctx context.Context, c *rpc.Caller, req *pb.ReportReque
 			  AND message_seqs = $4
 			LIMIT 1`, me, nullable(targetUser), nullable(chatID), seqsOrEmpty(seqs)).Scan(&id)
 		if err == nil {
+			reused = true
 			return nil
 		}
 		if !db.NoRows(err) {
@@ -227,8 +231,9 @@ func (s *Reports) Report(ctx context.Context, c *rpc.Caller, req *pb.ReportReque
 	if err != nil {
 		return nil, err
 	}
-	if PriorityFor(req.GetReason()) == PriorityCritical {
-		s.Log.Warn("critical report received", "report_id", id, "reason", req.GetReason().String())
+	if PriorityFor(req.GetReason()) == PriorityCritical && !reused {
+		s.logger().Warn("critical report received", "report_id", id, "reason", req.GetReason().String())
+		s.alertCritical(id, req.GetReason().String())
 	}
 	return &pb.ReportResponse{ReportId: id}, nil
 }

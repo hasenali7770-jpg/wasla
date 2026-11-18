@@ -35,7 +35,7 @@ type env struct {
 	sms   *auth.DevSender
 }
 
-func newEnv(t *testing.T) *env {
+func newEnv(t *testing.T, opts ...func(*Deps)) *env {
 	t.Helper()
 	pool := testutil.Postgres(t)
 	mr, rdb := testutil.Redis(t)
@@ -46,10 +46,14 @@ func newEnv(t *testing.T) *env {
 	cfg.PasswordParams = password.Fast
 	cfg.NewSessionGuard = 0
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	srv, err := New(context.Background(), Deps{
+	deps := Deps{
 		DB: pool, Redis: rdb, Log: log, IDs: ids, SMS: sms, Attestor: auth.DevAttestor{},
 		AuthCfg: cfg, SLA: moderation.DefaultSLA, MinAppVersion: "0.1.0",
-	})
+	}
+	for _, o := range opts {
+		o(&deps)
+	}
+	srv, err := New(context.Background(), deps)
 	if err != nil {
 		t.Fatal(err)
 	}

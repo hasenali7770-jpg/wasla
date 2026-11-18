@@ -33,6 +33,8 @@ type Config struct {
 	SmallGroupLimit int
 	MinAppVersion   string
 	TrustProxy      bool
+	// AlertWebhookURL receives critical-report alerts (Slack/Mattermost format).
+	AlertWebhookURL string
 	OriginPatterns  []string
 
 	// Secrets (hex-encoded, at least 32 bytes each in prod).
@@ -55,6 +57,7 @@ func Load() (Config, error) {
 		SmallGroupLimit: 200,
 		MinAppVersion:   env("WASLA_MIN_APP_VERSION", "0.1.0"),
 		TrustProxy:      os.Getenv("WASLA_TRUST_PROXY") == "true",
+		AlertWebhookURL: os.Getenv("WASLA_ALERT_WEBHOOK_URL"),
 	}
 	if v := os.Getenv("WASLA_ORIGIN_PATTERNS"); v != "" {
 		c.OriginPatterns = strings.Split(v, ",")

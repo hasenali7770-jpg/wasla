@@ -35,6 +35,14 @@ type Service struct {
 // transaction. Rows are locked in user_id order so concurrent Appends over
 // overlapping user sets cannot deadlock.
 func (s *Service) Append(ctx context.Context, tx pgx.Tx, userIDs []int64, update *pb.Update, chatID int64, out Pending) error {
+	return s.AppendEach(ctx, tx, userIDs, func(int64) *pb.Update { return update }, chatID, out)
+}
+
+// AppendEach is Append with a per-user update (e.g. the sender sees its
+// random_id, a reader gets ReadInbox while the others get ReadOutbox). All
+// rows are still locked in one ordered statement: never call Append twice for
+// different user subsets of the same event, as that reintroduces deadlocks.
+func (s *Service) AppendEach(ctx context.Context, tx pgx.Tx, userIDs []int64, build func(userID int64) *pb.Update, chatID int64, out Pending) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
@@ -67,11 +75,15 @@ func (s *Service) Append(ctx context.Context, tx pgx.Tx, userIDs []int64, update
 		return err
 	}
 
-	kind := kindOf(update)
 	date := s.now().Unix()
 	batch := &pgx.Batch{}
 	for _, u := range bumped {
-		upd := proto.Clone(update).(*pb.Update)
+		tmpl := build(u.user)
+		if tmpl == nil {
+			return fmt.Errorf("updates: no update built for user %d", u.user)
+		}
+		kind := kindOf(tmpl)
+		upd := proto.Clone(tmpl).(*pb.Update)
 		upd.Pts, upd.PtsCount, upd.Date = u.pts, 1, date
 		payload, err := proto.Marshal(upd)
 		if err != nil {

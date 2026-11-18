@@ -39,27 +39,34 @@ func LoadSelf(ctx context.Context, q Querier, id int64) (*pb.User, error) {
 	return u, nil
 }
 
-// LoadPublic returns the profile of another user as seen by viewer. Until the
-// privacy engine lands (Sprint 2), the phone number is never exposed to
-// others; this is the most restrictive behaviour, not a placeholder risk.
+// LoadPublic returns the profile of another user as seen by viewer. The phone
+// number is shown only to viewers who saved it themselves (most restrictive
+// behaviour until the full privacy engine lands).
 func LoadPublic(ctx context.Context, q Querier, viewer, id int64) (*pb.User, error) {
 	if viewer == id {
 		return LoadSelf(ctx, q, id)
 	}
 	u := &pb.User{Id: id}
-	var username *string
+	var username, ph *string
 	var photo *int64
 	var deleted bool
 	err := q.QueryRow(ctx, `
-		SELECT u.first_name, u.last_name, u.username, u.bio, u.photo_id, u.deleted_at IS NOT NULL,
+		SELECT u.first_name, u.last_name, u.username, u.bio, u.photo_id, u.deleted_at IS NOT NULL, u.phone,
 		       EXISTS (SELECT 1 FROM user_blocks b WHERE b.user_id = $1 AND b.blocked_user_id = u.id),
-		       EXISTS (SELECT 1 FROM contacts c WHERE c.owner_id = $1 AND c.contact_user_id = u.id)
+		       EXISTS (SELECT 1 FROM contacts c WHERE c.owner_id = $1 AND c.contact_user_id = u.id),
+		       EXISTS (SELECT 1 FROM contacts c WHERE c.owner_id = u.id AND c.contact_user_id = $1)
 		FROM users u WHERE u.id = $2`, viewer, id).
-		Scan(&u.FirstName, &u.LastName, &username, &u.Bio, &photo, &deleted, &u.IsBlocked, &u.IsContact)
+		Scan(&u.FirstName, &u.LastName, &username, &u.Bio, &photo, &deleted, &ph, &u.IsBlocked, &u.IsContact, &u.IsMutualContact)
 	if err != nil {
 		return nil, err
 	}
 	u.IsDeleted = deleted
+	u.IsMutualContact = u.IsMutualContact && u.IsContact
+	// Viewers who saved this number already know it; nobody else sees it
+	// until the privacy engine lands.
+	if ph != nil && u.IsContact {
+		u.Phone = *ph
+	}
 	if username != nil {
 		u.Username = *username
 	}
@@ -69,8 +76,8 @@ func LoadPublic(ctx context.Context, q Querier, viewer, id int64) (*pb.User, err
 	return u, nil
 }
 
-// Service implements the parts of wasla.v1.UsersService built in Sprint 1:
-// GetMe and blocking (needed by moderation). The rest lands in Sprint 2.
+// Service implements wasla.v1.UsersService except profile photos (with the
+// media service) and privacy settings (privacy engine).
 type Service struct {
 	DB *pgxpool.Pool
 }
@@ -81,6 +88,7 @@ func (s *Service) Register(r *rpc.Router) {
 	rpc.Register(r, p+"BlockUser", rpc.Private, s.BlockUser)
 	rpc.Register(r, p+"UnblockUser", rpc.Private, s.UnblockUser)
 	rpc.Register(r, p+"ListBlocked", rpc.Private, s.ListBlocked)
+	s.RegisterProfile(r)
 }
 
 func (s *Service) GetMe(ctx context.Context, c *rpc.Caller, _ *pb.GetMeRequest) (*pb.GetMeResponse, error) {
