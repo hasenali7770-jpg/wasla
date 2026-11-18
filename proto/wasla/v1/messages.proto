@@ -1,0 +1,332 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+import "wasla/v1/common.proto";
+import "wasla/v1/media.proto";
+import "wasla/v1/users.proto";
+
+// MessagesService: sending, editing, deleting and reading messages.
+//
+// Every state-changing call returns (pts, pts_count) for the caller's own
+// update sequence. The client applies the change locally and advances its
+// pts only if local_pts + pts_count == pts; otherwise it calls
+// UpdatesService.GetDifference. See docs/03-protocol.md §5.
+service MessagesService {
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  rpc EditMessage(EditMessageRequest) returns (EditMessageResponse);
+  rpc DeleteMessages(DeleteMessagesRequest) returns (DeleteMessagesResponse);
+  rpc ForwardMessages(ForwardMessagesRequest) returns (ForwardMessagesResponse);
+  rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+  rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse);
+  rpc ReadHistory(ReadHistoryRequest) returns (ReadHistoryResponse);
+  rpc SetTyping(SetTypingRequest) returns (SetTypingResponse);
+  rpc PinMessage(PinMessageRequest) returns (PinMessageResponse);
+}
+
+message Message {
+  int64 chat_id = 1;
+  int64 seq = 2;
+  int64 sender_id = 3;
+  int64 date = 4;
+  // 0 if never edited.
+  int64 edit_date = 5;
+  MessageContent content = 6;
+  // 0 if not a reply.
+  int64 reply_to_seq = 7;
+  ForwardInfo forward = 8;
+  // Only set on the sender's own messages (lets the outbox match its entry).
+  int64 random_id = 9;
+  bool pinned = 10;
+}
+
+// The oneof field numbers are also stored in messages.kind in the database.
+message MessageContent {
+  oneof kind {
+    TextContent text = 1;
+    PhotoContent photo = 2;
+    VideoContent video = 3;
+    DocumentContent document = 4;
+    VoiceContent voice = 5;
+    LocationContent location = 6;
+    ContactContent contact = 7;
+    ServiceContent service = 8;
+  }
+}
+
+message FormattedText {
+  // At most 4096 characters (1024 for captions).
+  string text = 1;
+  repeated TextEntity entities = 2;
+}
+
+message TextEntity {
+  TextEntityType type = 1;
+  // UTF-16 code units.
+  int32 offset = 2;
+  int32 length = 3;
+  // TEXT_URL only.
+  string url = 4;
+  // MENTION_NAME only.
+  int64 user_id = 5;
+}
+
+enum TextEntityType {
+  TEXT_ENTITY_TYPE_UNSPECIFIED = 0;
+  TEXT_ENTITY_TYPE_BOLD = 1;
+  TEXT_ENTITY_TYPE_ITALIC = 2;
+  TEXT_ENTITY_TYPE_UNDERLINE = 3;
+  TEXT_ENTITY_TYPE_STRIKETHROUGH = 4;
+  TEXT_ENTITY_TYPE_CODE = 5;
+  TEXT_ENTITY_TYPE_PRE = 6;
+  TEXT_ENTITY_TYPE_TEXT_URL = 7;
+  TEXT_ENTITY_TYPE_URL = 8;
+  TEXT_ENTITY_TYPE_MENTION = 9;
+  TEXT_ENTITY_TYPE_MENTION_NAME = 10;
+  TEXT_ENTITY_TYPE_HASHTAG = 11;
+  TEXT_ENTITY_TYPE_PHONE = 12;
+  TEXT_ENTITY_TYPE_EMAIL = 13;
+  TEXT_ENTITY_TYPE_SPOILER = 14;
+}
+
+message TextContent {
+  FormattedText text = 1;
+}
+
+message PhotoContent {
+  Media media = 1;
+  FormattedText caption = 2;
+}
+
+message VideoContent {
+  Media media = 1;
+  FormattedText caption = 2;
+}
+
+message DocumentContent {
+  Media media = 1;
+  FormattedText caption = 2;
+}
+
+message VoiceContent {
+  Media media = 1;
+}
+
+message LocationContent {
+  double latitude = 1;
+  double longitude = 2;
+  float accuracy_meters = 3;
+}
+
+message ContactContent {
+  string phone = 1;
+  string first_name = 2;
+  string last_name = 3;
+  // Set when the phone belongs to a Wasla user.
+  int64 user_id = 4;
+}
+
+// ServiceContent is a system line in the chat ("Ali added Sara").
+message ServiceContent {
+  oneof action {
+    ChatCreated chat_created = 1;
+    MembersAdded members_added = 2;
+    MemberRemoved member_removed = 3;
+    MemberLeft member_left = 4;
+    MemberJoinedByLink member_joined_by_link = 5;
+    ChatTitleChanged chat_title_changed = 6;
+    ChatPhotoChanged chat_photo_changed = 7;
+    MessagePinned message_pinned = 8;
+  }
+}
+
+message ChatCreated {
+  string title = 1;
+}
+
+message MembersAdded {
+  repeated int64 user_ids = 1;
+}
+
+message MemberRemoved {
+  int64 user_id = 1;
+}
+
+message MemberLeft {}
+
+message MemberJoinedByLink {}
+
+message ChatTitleChanged {
+  string title = 1;
+}
+
+message ChatPhotoChanged {
+  // 0 when the photo was removed.
+  int64 media_id = 1;
+}
+
+message MessagePinned {
+  int64 seq = 1;
+}
+
+message ForwardInfo {
+  // 0 when the author's FORWARDS privacy hides the link.
+  int64 from_user_id = 1;
+  string from_name = 2;
+  int64 original_date = 3;
+  // Set only if the requester can still access the original.
+  int64 from_chat_id = 4;
+  int64 from_seq = 5;
+}
+
+// InputContent is what the client sends; media is referenced by ID after
+// MediaService.CompleteUpload.
+message InputContent {
+  oneof kind {
+    FormattedText text = 1;
+    InputMedia media = 2;
+    LocationContent location = 3;
+    ContactContent contact = 4;
+  }
+}
+
+message InputMedia {
+  int64 media_id = 1;
+  FormattedText caption = 2;
+}
+
+message SendMessageRequest {
+  Peer peer = 1;
+  // Random 64-bit value from the client. Retrying with the same random_id
+  // returns the already-stored message instead of creating a duplicate.
+  int64 random_id = 2;
+  InputContent content = 3;
+  int64 reply_to_seq = 4;
+  // Deliver without sound (push sent with silent flag). Phase 2 in the UI.
+  bool silent = 5;
+}
+
+message SendMessageResponse {
+  Message message = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+message EditMessageRequest {
+  int64 chat_id = 1;
+  int64 seq = 2;
+  // Replaces the text or caption. Allowed for 48 hours after sending.
+  FormattedText text = 3;
+}
+
+message EditMessageResponse {
+  Message message = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+message DeleteMessagesRequest {
+  int64 chat_id = 1;
+  // At most 100.
+  repeated int64 seqs = 2;
+  // false: delete for me only. true: delete for everyone (own messages,
+  // or any message for group admins with DELETE_MESSAGES).
+  bool for_everyone = 3;
+}
+
+message DeleteMessagesResponse {
+  int64 pts = 1;
+  int32 pts_count = 2;
+}
+
+message ForwardMessagesRequest {
+  int64 from_chat_id = 1;
+  // At most 100, in the order they should appear.
+  repeated int64 seqs = 2;
+  Peer to_peer = 3;
+  // One per message, same order as seqs.
+  repeated int64 random_ids = 4;
+  // Forward as a copy, without the "Forwarded from" header.
+  bool hide_sender = 5;
+  bool silent = 6;
+}
+
+message ForwardMessagesResponse {
+  repeated Message messages = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+enum HistoryDirection {
+  HISTORY_DIRECTION_UNSPECIFIED = 0;
+  // Messages with seq < offset_seq, newest first.
+  HISTORY_DIRECTION_OLDER = 1;
+  // Messages with seq > offset_seq, oldest first.
+  HISTORY_DIRECTION_NEWER = 2;
+  // limit/2 on each side of offset_seq (jump to a reply or search hit).
+  HISTORY_DIRECTION_AROUND = 3;
+}
+
+message GetHistoryRequest {
+  int64 chat_id = 1;
+  // 0 with OLDER means "from the latest message".
+  int64 offset_seq = 2;
+  HistoryDirection direction = 3;
+  // At most 100.
+  int32 limit = 4;
+}
+
+message GetHistoryResponse {
+  repeated Message messages = 1;
+  repeated User users = 2;
+  bool has_more = 3;
+}
+
+message GetMessagesRequest {
+  int64 chat_id = 1;
+  repeated int64 seqs = 2;
+}
+
+message GetMessagesResponse {
+  repeated Message messages = 1;
+  repeated User users = 2;
+}
+
+message ReadHistoryRequest {
+  int64 chat_id = 1;
+  int64 max_seq = 2;
+}
+
+message ReadHistoryResponse {
+  int64 pts = 1;
+  int32 pts_count = 2;
+}
+
+enum TypingAction {
+  TYPING_ACTION_UNSPECIFIED = 0;
+  TYPING_ACTION_TYPING = 1;
+  TYPING_ACTION_RECORDING_VOICE = 2;
+  TYPING_ACTION_UPLOADING_PHOTO = 3;
+  TYPING_ACTION_UPLOADING_VIDEO = 4;
+  TYPING_ACTION_UPLOADING_DOCUMENT = 5;
+  TYPING_ACTION_CANCEL = 6;
+}
+
+message SetTypingRequest {
+  int64 chat_id = 1;
+  TypingAction action = 2;
+}
+
+message SetTypingResponse {}
+
+message PinMessageRequest {
+  int64 chat_id = 1;
+  int64 seq = 2;
+  bool unpin = 3;
+  bool silent = 4;
+}
+
+message PinMessageResponse {
+  int64 pts = 1;
+  int32 pts_count = 2;
+}

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+// Conventions used across the Wasla API
+//   * All IDs are int64 Snowflake values.
+//   * All timestamps are int64 Unix seconds (UTC), named `*_at` or `date`.
+//   * A message is addressed by (chat_id, seq). seq increases within a chat.
+//   * Text offsets/lengths are in UTF-16 code units (native to Dart and JS).
+//   * Field numbers are never reused; removed fields are `reserved`.
+
+// Peer is a conversation target when the chat_id may not be known yet.
+// Sending to your own user_id writes to Saved Messages.
+message Peer {
+  oneof kind {
+    int64 user_id = 1;
+    int64 chat_id = 2;
+  }
+}
+
+// MessageRef points at one message.
+message MessageRef {
+  int64 chat_id = 1;
+  int64 seq = 2;
+}
+
+// Avatar is a user or chat picture. The full image is fetched with
+// MediaService.GetDownloadUrl; thumbhash renders an instant placeholder.
+message Avatar {
+  int64 media_id = 1;
+  bytes thumbhash = 2;
+}
+
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_ANDROID = 1;
+  PLATFORM_IOS = 2;
+  PLATFORM_WEB = 3;
+  PLATFORM_WINDOWS = 4;
+  PLATFORM_MACOS = 5;
+  PLATFORM_LINUX = 6;
+}

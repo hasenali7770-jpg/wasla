@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+// ModerationService: user-facing reporting. Reports land in the staff
+// moderation queue (admin panel). Blocking lives in UsersService.
+service ModerationService {
+  rpc Report(ReportRequest) returns (ReportResponse);
+}
+
+enum ReportReason {
+  REPORT_REASON_UNSPECIFIED = 0;
+  REPORT_REASON_SPAM = 1;
+  REPORT_REASON_SCAM = 2;
+  REPORT_REASON_VIOLENCE = 3;
+  REPORT_REASON_TERRORISM = 4;
+  REPORT_REASON_CHILD_ABUSE = 5;
+  REPORT_REASON_PORNOGRAPHY = 6;
+  REPORT_REASON_ILLEGAL_GOODS = 7;
+  REPORT_REASON_PERSONAL_DATA = 8;
+  REPORT_REASON_HARASSMENT = 9;
+  REPORT_REASON_FAKE_ACCOUNT = 10;
+  REPORT_REASON_COPYRIGHT = 11;
+  REPORT_REASON_OTHER = 12;
+}
+
+message ReportedMessages {
+  int64 chat_id = 1;
+  // At most 100.
+  repeated int64 seqs = 2;
+}
+
+message ReportRequest {
+  oneof target {
+    int64 user_id = 1;
+    int64 chat_id = 2;
+    ReportedMessages messages = 3;
+  }
+  ReportReason reason = 4;
+  string comment = 5;
+  // Also block the user (user/private-chat reports only).
+  bool block = 6;
+}
+
+message ReportResponse {
+  int64 report_id = 1;
+}

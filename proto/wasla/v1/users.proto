@@ -1,0 +1,211 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+import "wasla/v1/common.proto";
+
+// UsersService: profiles, usernames, privacy and blocking.
+service UsersService {
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc SetProfilePhoto(SetProfilePhotoRequest) returns (SetProfilePhotoResponse);
+  rpc DeleteProfilePhoto(DeleteProfilePhotoRequest) returns (DeleteProfilePhotoResponse);
+
+  rpc CheckUsername(CheckUsernameRequest) returns (CheckUsernameResponse);
+  rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse);
+  rpc ResolveUsername(ResolveUsernameRequest) returns (ResolveUsernameResponse);
+  // Global search: public usernames (prefix) + own contacts (name).
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+
+  rpc GetPrivacy(GetPrivacyRequest) returns (GetPrivacyResponse);
+  rpc SetPrivacy(SetPrivacyRequest) returns (SetPrivacyResponse);
+
+  rpc BlockUser(BlockUserRequest) returns (BlockUserResponse);
+  rpc UnblockUser(UnblockUserRequest) returns (UnblockUserResponse);
+  rpc ListBlocked(ListBlockedRequest) returns (ListBlockedResponse);
+}
+
+// User as seen by the requesting user: fields hidden by the target's privacy
+// settings are left empty.
+message User {
+  int64 id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string username = 4;
+  string phone = 5;
+  string bio = 6;
+  Avatar photo = 7;
+  UserStatus status = 8;
+  bool is_self = 9;
+  // The requester has this user in their contacts.
+  bool is_contact = 10;
+  bool is_mutual_contact = 11;
+  bool is_blocked = 12;
+  bool is_deleted = 13;
+}
+
+message UserStatus {
+  oneof kind {
+    Online online = 1;
+    // Exact time, when privacy allows it.
+    int64 last_seen_at = 2;
+    // Rounded value shown when exact last-seen is hidden.
+    LastSeenApprox approx = 3;
+  }
+}
+
+message Online {
+  // The client shows "online" until this time unless refreshed.
+  int64 expires_at = 1;
+}
+
+enum LastSeenApprox {
+  LAST_SEEN_APPROX_UNSPECIFIED = 0;
+  LAST_SEEN_APPROX_RECENTLY = 1;
+  LAST_SEEN_APPROX_WITHIN_WEEK = 2;
+  LAST_SEEN_APPROX_WITHIN_MONTH = 3;
+  LAST_SEEN_APPROX_LONG_AGO = 4;
+}
+
+enum PrivacyKey {
+  PRIVACY_KEY_UNSPECIFIED = 0;
+  PRIVACY_KEY_PHONE_NUMBER = 1;
+  PRIVACY_KEY_LAST_SEEN = 2;
+  PRIVACY_KEY_PROFILE_PHOTO = 3;
+  PRIVACY_KEY_GROUP_INVITES = 4;
+  // Whether forwarded messages link back to the author's account.
+  PRIVACY_KEY_FORWARDS = 5;
+  // Reserved for Phase 3.
+  PRIVACY_KEY_CALLS = 6;
+}
+
+enum PrivacyRule {
+  PRIVACY_RULE_UNSPECIFIED = 0;
+  PRIVACY_RULE_EVERYBODY = 1;
+  PRIVACY_RULE_CONTACTS = 2;
+  PRIVACY_RULE_NOBODY = 3;
+}
+
+message PrivacySetting {
+  PrivacyKey key = 1;
+  PrivacyRule rule = 2;
+  repeated int64 always_allow_user_ids = 3;
+  repeated int64 never_allow_user_ids = 4;
+}
+
+message GetMeRequest {}
+
+message GetMeResponse {
+  User user = 1;
+}
+
+message GetUsersRequest {
+  // At most 200.
+  repeated int64 user_ids = 1;
+}
+
+message GetUsersResponse {
+  repeated User users = 1;
+}
+
+message UpdateProfileRequest {
+  optional string first_name = 1;
+  optional string last_name = 2;
+  optional string bio = 3;
+}
+
+message UpdateProfileResponse {
+  User user = 1;
+}
+
+message SetProfilePhotoRequest {
+  // A PHOTO uploaded with MediaService.
+  int64 media_id = 1;
+}
+
+message SetProfilePhotoResponse {
+  User user = 1;
+}
+
+message DeleteProfilePhotoRequest {
+  int64 media_id = 1;
+}
+
+message DeleteProfilePhotoResponse {
+  User user = 1;
+}
+
+message CheckUsernameRequest {
+  string username = 1;
+}
+
+message CheckUsernameResponse {
+  bool available = 1;
+}
+
+message SetUsernameRequest {
+  // Empty removes the username.
+  string username = 1;
+}
+
+message SetUsernameResponse {
+  User user = 1;
+}
+
+message ResolveUsernameRequest {
+  // With or without the leading "@".
+  string username = 1;
+}
+
+message ResolveUsernameResponse {
+  User user = 1;
+}
+
+message SearchUsersRequest {
+  string query = 1;
+  int32 limit = 2;
+}
+
+message SearchUsersResponse {
+  // Matches among the requester's contacts.
+  repeated User contacts = 1;
+  // Public username matches.
+  repeated User global = 2;
+}
+
+message GetPrivacyRequest {}
+
+message GetPrivacyResponse {
+  repeated PrivacySetting settings = 1;
+}
+
+message SetPrivacyRequest {
+  PrivacySetting setting = 1;
+}
+
+message SetPrivacyResponse {
+  PrivacySetting setting = 1;
+}
+
+message BlockUserRequest {
+  int64 user_id = 1;
+}
+
+message BlockUserResponse {}
+
+message UnblockUserRequest {
+  int64 user_id = 1;
+}
+
+message UnblockUserResponse {}
+
+message ListBlockedRequest {
+  int32 offset = 1;
+  int32 limit = 2;
+}
+
+message ListBlockedResponse {
+  repeated User users = 1;
+  int32 total = 2;
+}

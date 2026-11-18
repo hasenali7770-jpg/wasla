@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+import "wasla/v1/common.proto";
+import "wasla/v1/updates.proto";
+
+// Frame is the only type that crosses the WebSocket: exactly one Frame per
+// binary WebSocket message, compressed with permessage-deflate.
+//
+// Life of a connection:
+//   1. Client opens wss://edge.wasla.app/ws and sends Hello.
+//   2. Server answers HelloAck. If Hello carried a valid session token the
+//      connection is authenticated; otherwise only AuthService methods work
+//      until SignIn/SignUp/CheckPassword succeeds on this connection.
+//   3. Either side sends RpcRequest/RpcResponse; the server pushes UpdatesPush.
+//   4. Client sends Ping every 25 s when idle (keeps mobile NAT mappings open).
+// See docs/03-protocol.md.
+message Frame {
+  oneof kind {
+    RpcRequest request = 1;
+    RpcResponse response = 2;
+    UpdatesPush updates = 3;
+    Ping ping = 4;
+    Pong pong = 5;
+    Hello hello = 6;
+    HelloAck hello_ack = 7;
+  }
+}
+
+message Hello {
+  // Increase only on incompatible framing changes. Current: 1.
+  int32 protocol_version = 1;
+  // Empty for a fresh install.
+  string session_token = 2;
+  Platform platform = 3;
+  string app_version = 4;
+  string device_model = 5;
+  string os_version = 6;
+  // BCP 47, e.g. "ar-IQ". Used for SMS text and server-generated strings.
+  string lang_code = 7;
+}
+
+message HelloAck {
+  int64 server_time = 1;
+  bool authenticated = 2;
+  int64 user_id = 3;
+  // Clients older than this must show a forced-update screen.
+  string min_app_version = 4;
+}
+
+message RpcRequest {
+  // Chosen by the client, unique per connection, echoed in RpcResponse.
+  uint64 id = 1;
+  // gRPC-style full method name, e.g. "/wasla.v1.MessagesService/SendMessage".
+  // The same name is the HTTP path of the Connect fallback transport.
+  string method = 2;
+  // The serialized request message.
+  bytes payload = 3;
+}
+
+message RpcResponse {
+  uint64 id = 1;
+  oneof result {
+    bytes payload = 2;
+    Error error = 3;
+  }
+}
+
+message Error {
+  ErrorCode code = 1;
+  // Developer-facing English text. Clients localise from `code`.
+  string message = 2;
+  // Set with ERROR_CODE_RATE_LIMITED.
+  int32 retry_after_seconds = 3;
+  map<string, string> details = 4;
+}
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  // Generic
+  ERROR_CODE_INVALID_ARGUMENT = 1;
+  ERROR_CODE_UNAUTHENTICATED = 2;
+  ERROR_CODE_PERMISSION_DENIED = 3;
+  ERROR_CODE_NOT_FOUND = 4;
+  ERROR_CODE_ALREADY_EXISTS = 5;
+  ERROR_CODE_RATE_LIMITED = 6;
+  ERROR_CODE_INTERNAL = 7;
+  ERROR_CODE_UNAVAILABLE = 8;
+  ERROR_CODE_UNIMPLEMENTED = 9;
+  ERROR_CODE_UPDATE_REQUIRED = 10;
+  // Auth
+  ERROR_CODE_PHONE_INVALID = 20;
+  ERROR_CODE_PHONE_CODE_INVALID = 21;
+  ERROR_CODE_PHONE_CODE_EXPIRED = 22;
+  ERROR_CODE_PHONE_BANNED = 23;
+  ERROR_CODE_PASSWORD_INVALID = 24;
+  ERROR_CODE_SESSION_REVOKED = 25;
+  // Users
+  ERROR_CODE_USERNAME_INVALID = 30;
+  ERROR_CODE_USERNAME_TAKEN = 31;
+  ERROR_CODE_PEER_BLOCKED = 32;
+  ERROR_CODE_PRIVACY_RESTRICTED = 33;
+  // Messages & chats
+  ERROR_CODE_MESSAGE_TOO_LONG = 40;
+  ERROR_CODE_MESSAGE_EDIT_EXPIRED = 41;
+  ERROR_CODE_CHAT_MEMBER_LIMIT = 42;
+  ERROR_CODE_CHAT_WRITE_FORBIDDEN = 43;
+  ERROR_CODE_INVITE_INVALID = 44;
+  // Media
+  ERROR_CODE_FILE_TOO_LARGE = 50;
+  ERROR_CODE_UPLOAD_INCOMPLETE = 51;
+}
+
+message Ping {
+  uint64 nonce = 1;
+}
+
+message Pong {
+  uint64 nonce = 1;
+}

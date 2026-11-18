@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+import "wasla/v1/common.proto";
+
+// MediaService: uploads and downloads. File bytes never go through the API
+// servers. The client PUTs parts straight to object storage with presigned
+// URLs (S3 multipart) and downloads from the CDN with short-lived signed URLs.
+//
+// Upload flow (resumable, survives app restarts):
+//   CreateUpload ─► PUT parts (parallel, 3 at a time on mobile) ─►
+//   [GetUploadPartUrls to resume or refresh expired URLs] ─► CompleteUpload
+service MediaService {
+  rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
+  rpc GetUploadPartUrls(GetUploadPartUrlsRequest) returns (GetUploadPartUrlsResponse);
+  rpc CompleteUpload(CompleteUploadRequest) returns (CompleteUploadResponse);
+  rpc AbortUpload(AbortUploadRequest) returns (AbortUploadResponse);
+  rpc GetDownloadUrl(GetDownloadUrlRequest) returns (GetDownloadUrlResponse);
+}
+
+enum MediaKind {
+  MEDIA_KIND_UNSPECIFIED = 0;
+  MEDIA_KIND_PHOTO = 1;
+  MEDIA_KIND_VIDEO = 2;
+  MEDIA_KIND_DOCUMENT = 3;
+  MEDIA_KIND_VOICE = 4;
+  MEDIA_KIND_AUDIO = 5;
+  MEDIA_KIND_ANIMATION = 6;
+}
+
+enum MediaStatus {
+  MEDIA_STATUS_UNSPECIFIED = 0;
+  MEDIA_STATUS_UPLOADING = 1;
+  MEDIA_STATUS_PROCESSING = 2;
+  MEDIA_STATUS_READY = 3;
+  MEDIA_STATUS_FAILED = 4;
+}
+
+message Media {
+  int64 id = 1;
+  MediaKind kind = 2;
+  string mime_type = 3;
+  int64 size_bytes = 4;
+  string file_name = 5;
+  int32 width = 6;
+  int32 height = 7;
+  int32 duration_ms = 8;
+  bytes thumbhash = 9;
+  // Voice messages: 100 samples, 5 bits each, packed.
+  bytes waveform = 10;
+  repeated MediaVariant variants = 11;
+  MediaStatus status = 12;
+}
+
+// MediaVariant is a server-generated rendition: "thumb_s" (90px), "thumb_m"
+// (320px), "photo_l" (1280px), "video_480p", "video_720p".
+message MediaVariant {
+  string type = 1;
+  int32 width = 2;
+  int32 height = 3;
+  int64 size_bytes = 4;
+}
+
+message UploadPartUrl {
+  // 1-based.
+  int32 part_number = 1;
+  string url = 2;
+  int64 expires_at = 3;
+}
+
+message CompletedPart {
+  int32 part_number = 1;
+  // ETag returned by object storage for that PUT.
+  string etag = 2;
+}
+
+message CreateUploadRequest {
+  MediaKind kind = 1;
+  string mime_type = 2;
+  // Up to 2 GiB. The Lean MVP caps this at 500 MB via server config.
+  int64 size_bytes = 3;
+  string file_name = 4;
+  int32 width = 5;
+  int32 height = 6;
+  int32 duration_ms = 7;
+}
+
+message CreateUploadResponse {
+  string upload_id = 1;
+  int64 media_id = 2;
+  // 512 KiB on mobile networks; the server may raise it for big files so the
+  // part count stays under 10,000.
+  int32 part_size_bytes = 3;
+  int32 part_count = 4;
+  // URLs for the first parts (up to 50).
+  repeated UploadPartUrl urls = 5;
+}
+
+message GetUploadPartUrlsRequest {
+  string upload_id = 1;
+  repeated int32 part_numbers = 2;
+}
+
+message GetUploadPartUrlsResponse {
+  repeated UploadPartUrl urls = 1;
+  // Parts object storage already has, so a resumed upload can skip them.
+  repeated CompletedPart uploaded_parts = 2;
+}
+
+message CompleteUploadRequest {
+  string upload_id = 1;
+  repeated CompletedPart parts = 2;
+  // Optional client-computed SHA-256 of the whole file (integrity check).
+  bytes sha256 = 3;
+  bytes thumbhash = 4;
+  bytes waveform = 5;
+}
+
+message CompleteUploadResponse {
+  // Photos and voice are usually READY at once; videos come back PROCESSING
+  // while transcoding but can be sent right away.
+  Media media = 1;
+}
+
+message AbortUploadRequest {
+  string upload_id = 1;
+}
+
+message AbortUploadResponse {}
+
+message GetDownloadUrlRequest {
+  int64 media_id = 1;
+  // Empty means the original file.
+  string variant = 2;
+  // Where the requester saw this media; the server checks access through it
+  // with a primary-key lookup.
+  oneof context {
+    MessageRef message = 3;
+    int64 user_id = 4;
+    int64 chat_id = 5;
+  }
+}
+
+message GetDownloadUrlResponse {
+  string url = 1;
+  int64 expires_at = 2;
+}

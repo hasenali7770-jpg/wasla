@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+import "wasla/v1/chats.proto";
+import "wasla/v1/messages.proto";
+import "wasla/v1/users.proto";
+
+// UpdatesService: multi-device sync.
+//
+// Every user has one update sequence number, pts. Each persistent change the
+// user must see (new message in any chat, edit, delete, read receipt, chat or
+// dialog change) gets the next pts and is stored in the user's update log.
+// Live updates arrive as UpdatesPush frames. After a reconnect, or when a gap
+// is detected, the client calls GetDifference(local_pts) and receives exactly
+// what it missed. Ephemeral updates (typing, online status) have pts = 0 and
+// are never replayed.
+service UpdatesService {
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
+  rpc GetDifference(GetDifferenceRequest) returns (GetDifferenceResponse);
+}
+
+// UpdatesPush is the server-to-client push frame. users/chats carry any
+// entities the updates reference that the client may not have cached.
+message UpdatesPush {
+  repeated Update updates = 1;
+  repeated User users = 2;
+  repeated Chat chats = 3;
+}
+
+message Update {
+  // 0 for ephemeral updates.
+  int64 pts = 1;
+  // How many pts values this update consumes (normally 1).
+  int32 pts_count = 2;
+  int64 date = 3;
+
+  // The oneof field numbers are also stored in user_updates.kind.
+  oneof kind {
+    NewMessage new_message = 10;
+    MessageEdited message_edited = 11;
+    MessagesDeleted messages_deleted = 12;
+    ReadInbox read_inbox = 13;
+    ReadOutbox read_outbox = 14;
+    ChatUpdated chat_updated = 15;
+    ChatLeft chat_left = 16;
+    DialogUpdated dialog_updated = 17;
+    PinnedDialogsReordered pinned_dialogs_reordered = 18;
+    MessagePinnedUpdate message_pinned = 19;
+    HistoryCleared history_cleared = 20;
+    ContactJoined contact_joined = 21;
+    UserUpdated user_updated = 22;
+
+    // Ephemeral (pts = 0).
+    Typing typing = 40;
+    UserStatusChanged user_status = 41;
+  }
+}
+
+message NewMessage {
+  Message message = 1;
+}
+
+message MessageEdited {
+  Message message = 1;
+}
+
+message MessagesDeleted {
+  int64 chat_id = 1;
+  repeated int64 seqs = 2;
+}
+
+// ReadInbox: the user read a chat on another device.
+message ReadInbox {
+  int64 chat_id = 1;
+  int64 max_seq = 2;
+  int32 still_unread_count = 3;
+}
+
+// ReadOutbox: someone read the user's messages up to max_seq (✓✓).
+message ReadOutbox {
+  int64 chat_id = 1;
+  int64 max_seq = 2;
+}
+
+message ChatUpdated {
+  Chat chat = 1;
+}
+
+// ChatLeft: the user left or was removed. The client keeps the history
+// read-only until the user deletes the dialog.
+message ChatLeft {
+  int64 chat_id = 1;
+  bool kicked = 2;
+}
+
+message DialogUpdated {
+  Dialog dialog = 1;
+}
+
+message PinnedDialogsReordered {
+  repeated int64 chat_ids = 1;
+  bool archived = 2;
+}
+
+message MessagePinnedUpdate {
+  int64 chat_id = 1;
+  int64 seq = 2;
+  bool pinned = 3;
+}
+
+message HistoryCleared {
+  int64 chat_id = 1;
+  int64 max_seq = 2;
+}
+
+message ContactJoined {
+  int64 user_id = 1;
+}
+
+message UserUpdated {
+  User user = 1;
+}
+
+message Typing {
+  int64 chat_id = 1;
+  int64 user_id = 2;
+  TypingAction action = 3;
+}
+
+message UserStatusChanged {
+  int64 user_id = 1;
+  UserStatus status = 2;
+}
+
+message GetStateRequest {}
+
+message GetStateResponse {
+  int64 pts = 1;
+  int64 date = 2;
+}
+
+message GetDifferenceRequest {
+  int64 pts = 1;
+  // At most 1000; default 500.
+  int32 limit = 2;
+}
+
+message GetDifferenceResponse {
+  repeated Update updates = 1;
+  repeated User users = 2;
+  repeated Chat chats = 3;
+  // The pts after applying these updates.
+  int64 pts = 4;
+  // More updates are waiting: call again with the new pts.
+  bool has_more = 5;
+  // The requested pts is older than the log keeps. Drop local dialog state,
+  // reload with ChatsService.ListDialogs, and continue from its pts.
+  bool too_long = 6;
+}

@@ -1,0 +1,193 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+import "wasla/v1/common.proto";
+import "wasla/v1/users.proto";
+
+// AuthService: phone + one-time code login, two-step verification, sessions.
+//
+// Login flow:
+//   SendCode ─► SignIn ─┬─► authorization           (existing account)
+//                       ├─► sign_up_required ─► SignUp
+//                       └─► password_required ─► CheckPassword
+// A successful SignIn/SignUp/CheckPassword authenticates the current
+// connection and returns a session token for future Hello frames.
+service AuthService {
+  rpc SendCode(SendCodeRequest) returns (SendCodeResponse);
+  rpc ResendCode(ResendCodeRequest) returns (ResendCodeResponse);
+  rpc SignIn(SignInRequest) returns (SignInResponse);
+  rpc SignUp(SignUpRequest) returns (SignUpResponse);
+  rpc CheckPassword(CheckPasswordRequest) returns (CheckPasswordResponse);
+  rpc LogOut(LogOutRequest) returns (LogOutResponse);
+
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  rpc RevokeOtherSessions(RevokeOtherSessionsRequest) returns (RevokeOtherSessionsResponse);
+
+  rpc RegisterPushToken(RegisterPushTokenRequest) returns (RegisterPushTokenResponse);
+  // Sets, changes or removes the two-step verification password.
+  rpc SetPassword(SetPasswordRequest) returns (SetPasswordResponse);
+  // Required in-app by Google Play and the App Store.
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+}
+
+enum CodeDelivery {
+  CODE_DELIVERY_UNSPECIFIED = 0;
+  CODE_DELIVERY_SMS = 1;
+  CODE_DELIVERY_VOICE_CALL = 2;
+  // Sent as a message to the user's already-logged-in devices (free).
+  CODE_DELIVERY_APP = 3;
+}
+
+enum PushProvider {
+  PUSH_PROVIDER_UNSPECIFIED = 0;
+  PUSH_PROVIDER_FCM = 1;
+  PUSH_PROVIDER_APNS = 2;
+  PUSH_PROVIDER_HMS = 3;
+}
+
+message SendCodeRequest {
+  // E.164, e.g. "+9647701234567".
+  string phone = 1;
+  // Play Integrity (Android) / App Attest (iOS) token. Missing or invalid
+  // tokens get stricter rate limits (SMS-pumping defence).
+  string device_attestation = 2;
+}
+
+message SendCodeResponse {
+  // Opaque handle for this verification attempt.
+  string code_hash = 1;
+  CodeDelivery delivery = 2;
+  int32 code_length = 3;
+  int32 resend_after_seconds = 4;
+  int32 expires_in_seconds = 5;
+  // What ResendCode will use next (e.g. SMS → VOICE_CALL).
+  CodeDelivery next_delivery = 6;
+}
+
+message ResendCodeRequest {
+  string phone = 1;
+  string code_hash = 2;
+}
+
+message ResendCodeResponse {
+  string code_hash = 1;
+  CodeDelivery delivery = 2;
+  int32 code_length = 3;
+  int32 resend_after_seconds = 4;
+  int32 expires_in_seconds = 5;
+  CodeDelivery next_delivery = 6;
+}
+
+message SignInRequest {
+  string phone = 1;
+  string code_hash = 2;
+  string code = 3;
+}
+
+message SignInResponse {
+  oneof result {
+    Authorization authorization = 1;
+    SignUpRequired sign_up_required = 2;
+    PasswordRequired password_required = 3;
+  }
+}
+
+message Authorization {
+  // 256-bit random token, base64url. Store in secure storage
+  // (Android Keystore / iOS Keychain); send it in Hello.
+  string session_token = 1;
+  User user = 2;
+}
+
+message SignUpRequired {
+  string terms_version = 1;
+}
+
+message PasswordRequired {
+  string hint = 1;
+  // Short-lived (10 min) token proving the phone was verified.
+  string login_token = 2;
+}
+
+message SignUpRequest {
+  string phone = 1;
+  string code_hash = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string terms_version = 5;
+}
+
+message SignUpResponse {
+  Authorization authorization = 1;
+}
+
+message CheckPasswordRequest {
+  string login_token = 1;
+  string password = 2;
+}
+
+message CheckPasswordResponse {
+  Authorization authorization = 1;
+}
+
+message LogOutRequest {}
+
+message LogOutResponse {}
+
+message Session {
+  int64 id = 1;
+  Platform platform = 2;
+  string device_model = 3;
+  string os_version = 4;
+  string app_version = 5;
+  string country_code = 6;
+  int64 created_at = 7;
+  int64 last_active_at = 8;
+  bool current = 9;
+}
+
+message ListSessionsRequest {}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+message RevokeSessionRequest {
+  int64 session_id = 1;
+}
+
+message RevokeSessionResponse {}
+
+message RevokeOtherSessionsRequest {}
+
+message RevokeOtherSessionsResponse {
+  int32 revoked_count = 1;
+}
+
+message RegisterPushTokenRequest {
+  PushProvider provider = 1;
+  string token = 2;
+}
+
+message RegisterPushTokenResponse {}
+
+message SetPasswordRequest {
+  // Required when a password is already set.
+  string current_password = 1;
+  // Empty removes two-step verification.
+  string new_password = 2;
+  string hint = 3;
+  string recovery_email = 4;
+}
+
+message SetPasswordResponse {}
+
+message DeleteAccountRequest {
+  string reason = 1;
+  // Required when two-step verification is on.
+  string password = 2;
+}
+
+message DeleteAccountResponse {}

@@ -1,0 +1,334 @@
+syntax = "proto3";
+
+package wasla.v1;
+
+import "wasla/v1/common.proto";
+import "wasla/v1/messages.proto";
+import "wasla/v1/users.proto";
+
+// ChatsService: the chat list (dialogs), groups and invite links.
+service ChatsService {
+  rpc ListDialogs(ListDialogsRequest) returns (ListDialogsResponse);
+  rpc UpdateDialog(UpdateDialogRequest) returns (UpdateDialogResponse);
+  rpc ReorderPinnedDialogs(ReorderPinnedDialogsRequest) returns (ReorderPinnedDialogsResponse);
+  rpc ClearHistory(ClearHistoryRequest) returns (ClearHistoryResponse);
+
+  rpc GetChats(GetChatsRequest) returns (GetChatsResponse);
+  // Returns (creating it if needed) the private chat with a user. Empty
+  // private chats do not appear in ListDialogs.
+  rpc GetPrivateChat(GetPrivateChatRequest) returns (GetPrivateChatResponse);
+
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  rpc UpdateChatInfo(UpdateChatInfoRequest) returns (UpdateChatInfoResponse);
+  rpc SetDefaultPermissions(SetDefaultPermissionsRequest) returns (SetDefaultPermissionsResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc AddMembers(AddMembersRequest) returns (AddMembersResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  rpc SetMemberRole(SetMemberRoleRequest) returns (SetMemberRoleResponse);
+  rpc LeaveChat(LeaveChatRequest) returns (LeaveChatResponse);
+
+  rpc CreateInviteLink(CreateInviteLinkRequest) returns (CreateInviteLinkResponse);
+  rpc RevokeInviteLink(RevokeInviteLinkRequest) returns (RevokeInviteLinkResponse);
+  rpc CheckInviteLink(CheckInviteLinkRequest) returns (CheckInviteLinkResponse);
+  rpc JoinByInviteLink(JoinByInviteLinkRequest) returns (JoinByInviteLinkResponse);
+}
+
+enum ChatType {
+  CHAT_TYPE_UNSPECIFIED = 0;
+  CHAT_TYPE_PRIVATE = 1;
+  CHAT_TYPE_SAVED = 2;
+  // Small group, fan-out on write. Lean MVP limit: 200 members.
+  CHAT_TYPE_GROUP = 3;
+  // Phase 2: large groups (up to 200,000) and channels, fan-out on read.
+  CHAT_TYPE_SUPERGROUP = 4;
+  CHAT_TYPE_CHANNEL = 5;
+}
+
+enum ChatMemberRole {
+  CHAT_MEMBER_ROLE_UNSPECIFIED = 0;
+  CHAT_MEMBER_ROLE_MEMBER = 1;
+  CHAT_MEMBER_ROLE_ADMIN = 2;
+  CHAT_MEMBER_ROLE_OWNER = 3;
+}
+
+// AdminRight values are bit flags, combined in admin_rights.
+enum AdminRight {
+  ADMIN_RIGHT_UNSPECIFIED = 0;
+  ADMIN_RIGHT_CHANGE_INFO = 1;
+  ADMIN_RIGHT_DELETE_MESSAGES = 2;
+  ADMIN_RIGHT_BAN_USERS = 4;
+  ADMIN_RIGHT_INVITE_USERS = 8;
+  ADMIN_RIGHT_PIN_MESSAGES = 16;
+  ADMIN_RIGHT_ADD_ADMINS = 32;
+}
+
+// MemberPermission values are bit flags for what ordinary members may do,
+// combined in default_permissions.
+enum MemberPermission {
+  MEMBER_PERMISSION_UNSPECIFIED = 0;
+  MEMBER_PERMISSION_SEND_MESSAGES = 1;
+  MEMBER_PERMISSION_SEND_MEDIA = 2;
+  MEMBER_PERMISSION_ADD_MEMBERS = 4;
+  MEMBER_PERMISSION_PIN_MESSAGES = 8;
+  MEMBER_PERMISSION_CHANGE_INFO = 16;
+}
+
+message Chat {
+  int64 id = 1;
+  ChatType type = 2;
+  // Groups only. For private chats the client shows the peer's name.
+  string title = 3;
+  string about = 4;
+  Avatar photo = 5;
+  // PRIVATE: the other user. SAVED: the requester.
+  int64 peer_user_id = 6;
+  int32 member_count = 7;
+  int64 creator_id = 8;
+  uint64 default_permissions = 9;
+  ChatMemberRole my_role = 10;
+  uint64 my_admin_rights = 11;
+  int64 last_seq = 12;
+  int64 created_at = 13;
+}
+
+// Dialog is the requester's entry for a chat in the chat list.
+message Dialog {
+  int64 chat_id = 1;
+  Message top_message = 2;
+  int32 unread_count = 3;
+  int64 read_inbox_seq = 4;
+  int64 read_outbox_seq = 5;
+  // 0 = not pinned; lower values sort first.
+  int32 pinned_rank = 6;
+  bool archived = 7;
+  // 0 = not muted. Far-future value = muted forever.
+  int64 muted_until = 8;
+}
+
+message ChatMember {
+  int64 user_id = 1;
+  ChatMemberRole role = 2;
+  uint64 admin_rights = 3;
+  int64 joined_at = 4;
+  int64 invited_by = 5;
+}
+
+message ChatInvite {
+  string code = 1;
+  // https://wasla.app/+<code>
+  string url = 2;
+  string title = 3;
+  int64 created_by = 4;
+  int64 expires_at = 5;
+  int32 usage_limit = 6;
+  int32 usage_count = 7;
+  bool revoked = 8;
+}
+
+message ListDialogsRequest {
+  bool archived = 1;
+  // Keyset pagination: pass the top_message date and chat_id of the last
+  // dialog from the previous page. Zeros for the first page.
+  int64 offset_date = 2;
+  int64 offset_chat_id = 3;
+  // At most 100.
+  int32 limit = 4;
+}
+
+message ListDialogsResponse {
+  repeated Dialog dialogs = 1;
+  repeated Chat chats = 2;
+  repeated User users = 3;
+  bool has_more = 4;
+  // The requester's current pts, so a fresh client can start syncing from here.
+  int64 pts = 5;
+}
+
+message UpdateDialogRequest {
+  int64 chat_id = 1;
+  optional bool pinned = 2;
+  optional bool archived = 3;
+  optional int64 muted_until = 4;
+}
+
+message UpdateDialogResponse {
+  Dialog dialog = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+message ReorderPinnedDialogsRequest {
+  // The complete new order of pinned chats.
+  repeated int64 chat_ids = 1;
+  bool archived = 2;
+}
+
+message ReorderPinnedDialogsResponse {
+  int64 pts = 1;
+  int32 pts_count = 2;
+}
+
+message ClearHistoryRequest {
+  int64 chat_id = 1;
+  // Private chats only: also clear it for the other person.
+  bool for_everyone = 2;
+}
+
+message ClearHistoryResponse {
+  int64 pts = 1;
+  int32 pts_count = 2;
+}
+
+message GetChatsRequest {
+  repeated int64 chat_ids = 1;
+}
+
+message GetChatsResponse {
+  repeated Chat chats = 1;
+}
+
+message GetPrivateChatRequest {
+  int64 user_id = 1;
+}
+
+message GetPrivateChatResponse {
+  Chat chat = 1;
+  User user = 2;
+}
+
+message CreateGroupRequest {
+  string title = 1;
+  repeated int64 user_ids = 2;
+  // Idempotency key for retries.
+  int64 random_id = 3;
+}
+
+message CreateGroupResponse {
+  Chat chat = 1;
+  // Users who could not be added because of their GROUP_INVITES privacy;
+  // the client offers to send them an invite link instead.
+  repeated int64 privacy_restricted_user_ids = 2;
+  int64 pts = 3;
+  int32 pts_count = 4;
+}
+
+message UpdateChatInfoRequest {
+  int64 chat_id = 1;
+  optional string title = 2;
+  optional string about = 3;
+  // 0 removes the photo.
+  optional int64 photo_media_id = 4;
+}
+
+message UpdateChatInfoResponse {
+  Chat chat = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+message SetDefaultPermissionsRequest {
+  int64 chat_id = 1;
+  uint64 permissions = 2;
+}
+
+message SetDefaultPermissionsResponse {
+  Chat chat = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+message ListMembersRequest {
+  int64 chat_id = 1;
+  int32 offset = 2;
+  int32 limit = 3;
+}
+
+message ListMembersResponse {
+  repeated ChatMember members = 1;
+  repeated User users = 2;
+  int32 total = 3;
+}
+
+message AddMembersRequest {
+  int64 chat_id = 1;
+  repeated int64 user_ids = 2;
+}
+
+message AddMembersResponse {
+  repeated int64 privacy_restricted_user_ids = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+message RemoveMemberRequest {
+  int64 chat_id = 1;
+  int64 user_id = 2;
+}
+
+message RemoveMemberResponse {
+  int64 pts = 1;
+  int32 pts_count = 2;
+}
+
+message SetMemberRoleRequest {
+  int64 chat_id = 1;
+  int64 user_id = 2;
+  ChatMemberRole role = 3;
+  uint64 admin_rights = 4;
+}
+
+message SetMemberRoleResponse {
+  ChatMember member = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}
+
+message LeaveChatRequest {
+  int64 chat_id = 1;
+}
+
+message LeaveChatResponse {
+  int64 pts = 1;
+  int32 pts_count = 2;
+}
+
+message CreateInviteLinkRequest {
+  int64 chat_id = 1;
+  string title = 2;
+  int64 expires_at = 3;
+  int32 usage_limit = 4;
+}
+
+message CreateInviteLinkResponse {
+  ChatInvite invite = 1;
+}
+
+message RevokeInviteLinkRequest {
+  int64 chat_id = 1;
+  string code = 2;
+}
+
+message RevokeInviteLinkResponse {}
+
+message CheckInviteLinkRequest {
+  string code = 1;
+}
+
+message CheckInviteLinkResponse {
+  // Preview shown before joining.
+  string title = 1;
+  Avatar photo = 2;
+  int32 member_count = 3;
+  // Set if the requester is already a member.
+  Chat chat = 4;
+}
+
+message JoinByInviteLinkRequest {
+  string code = 1;
+}
+
+message JoinByInviteLinkResponse {
+  Chat chat = 1;
+  int64 pts = 2;
+  int32 pts_count = 3;
+}

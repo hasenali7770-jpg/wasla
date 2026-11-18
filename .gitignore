@@ -1,0 +1,20 @@
+# Generated code (regenerate with `make proto-gen`)
+backend/gen/
+app/lib/gen/
+# Go
+backend/bin/
+# Flutter
+app/.dart_tool/
+app/build/
+app/.flutter-plugins*
+# Secrets & local env
+.env
+*.keystore
+*.jks
+key.properties
+google-services.json
+GoogleService-Info.plist
+# OS/editor
+.DS_Store
+.idea/
+.vscode/

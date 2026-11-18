@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-action@v1
+        with:
+          input: proto
+          lint: true
+          format: false
+          # On pull requests buf-action also checks for breaking changes
+          # against the base branch (its default behaviour).
+          push: false
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: wasla
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: wasla
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wasla" --health-interval 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: wasla
+      PGPASSWORD: ci
+      PGDATABASE: wasla
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrate up, down, up
+        run: |
+          for f in db/postgres/migrations/*.up.sql; do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
+          for f in $(ls -r db/postgres/migrations/*.down.sql); do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
+          for f in db/postgres/migrations/*.up.sql; do psql -v ON_ERROR_STOP=1 -q -f "$f"; done
+      - name: Smoke tests
+        run: for f in db/postgres/tests/*.sql; do psql -v ON_ERROR_STOP=1 -f "$f"; done
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race ./...
+      - run: go build ./cmd/wasla-server
+
+  # The Flutter job is added in Phase 1 sprint 1, once app/ is generated:
+  #   flutter analyze, flutter test (incl. RTL/LTR golden tests), APK build.
