@@ -144,11 +144,28 @@ func TestFCMUnregisteredToken(t *testing.T) {
 	}
 }
 
+func TestKeyFileAsPasted(t *testing.T) {
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
+	der, _ := x509.MarshalPKCS8PrivateKey(key)
+	raw, _ := json.Marshal(map[string]string{"project_id": "p", "client_email": "e@p.iam.gserviceaccount.com",
+		"private_key": string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))})
+	for name, in := range map[string][]byte{
+		"bom":    append([]byte("\xef\xbb\xbf"), raw...),
+		"base64": []byte(base64.StdEncoding.EncodeToString(raw) + "\n"),
+		"spaces": append(append([]byte("\n  "), raw...), '\n'),
+	} {
+		if _, err := NewFCM(in, ""); err != nil {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
 func TestBadKeyFile(t *testing.T) {
 	if _, err := NewFCM([]byte(`{"project_id":"p"}`), ""); err == nil {
 		t.Fatal("expected error for incomplete key")
 	}
-	if _, err := NewFCM([]byte(`not json`), ""); err == nil {
-		t.Fatal("expected error for bad JSON")
+	_, err := NewFCM([]byte(`-----BEGIN PRIVATE KEY----- secret`), "")
+	if err == nil || strings.Contains(err.Error(), "secret") {
+		t.Fatalf("expected an error that does not echo the content, got %v", err)
 	}
 }

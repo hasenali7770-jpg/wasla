@@ -74,8 +74,9 @@ func NewFCMFromFile(path string) (*FCM, error) {
 // (tests); empty means https://fcm.googleapis.com.
 func NewFCM(keyJSON []byte, endpoint string) (*FCM, error) {
 	var a serviceAccount
-	if err := json.Unmarshal(keyJSON, &a); err != nil {
-		return nil, fmt.Errorf("push: bad service-account file: %w", err)
+	if err := json.Unmarshal(cleanKey(keyJSON), &a); err != nil {
+		// Never include the content: it is a private key.
+		return nil, fmt.Errorf("push: service-account file is not valid JSON (%d bytes); re-paste the whole file into FCM_SERVICE_ACCOUNT_JSON", len(keyJSON))
 	}
 	if a.ProjectID == "" || a.ClientEmail == "" || a.PrivateKey == "" {
 		return nil, errors.New("push: service-account file is missing project_id, client_email or private_key")
@@ -104,6 +105,19 @@ func NewFCM(keyJSON []byte, endpoint string) (*FCM, error) {
 		http:    &http.Client{Timeout: 15 * time.Second},
 		sendURL: fmt.Sprintf("%s/v1/projects/%s/messages:send", strings.TrimRight(endpoint, "/"), a.ProjectID),
 	}, nil
+}
+
+// cleanKey accepts the key file as commonly pasted into a secret: with a
+// UTF-8 byte-order mark (Windows Notepad), surrounding whitespace, or
+// base64-encoded.
+func cleanKey(b []byte) []byte {
+	b = bytes.TrimSpace(bytes.TrimPrefix(bytes.TrimSpace(b), []byte("\xef\xbb\xbf")))
+	if len(b) > 0 && b[0] != '{' {
+		if dec, err := base64.StdEncoding.DecodeString(string(b)); err == nil {
+			return bytes.TrimSpace(bytes.TrimPrefix(dec, []byte("\xef\xbb\xbf")))
+		}
+	}
+	return b
 }
 
 // ProjectID is the Firebase project the key belongs to (for logs).

@@ -10,6 +10,7 @@ The JSON comes from the GOOGLE_SERVICES_JSON secret in CI and is never
 committed. Without it the app builds normally and push notifications are
 simply off. The output file is ignored by git.
 """
+import base64
 import json
 import sys
 from xml.sax.saxutils import escape
@@ -18,12 +19,43 @@ PACKAGE = "iq.wasla.messenger"
 OUT = "android/app/src/main/res/values/firebase_config.xml"
 
 
+def parse(raw: str):
+    """Accepts the file as pasted from common editors: with a byte-order mark
+    (Windows Notepad), wrapped in quotes or code fences, or base64-encoded.
+    Never prints the content itself."""
+    text = raw.strip().lstrip("\ufeff").strip()
+    for fence in ("```json", "```"):
+        if text.startswith(fence):
+            text = text[len(fence):]
+    text = text.strip().rstrip("`").strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in "'\"":
+        text = text[1:-1].strip()
+    try:
+        return json.loads(text)
+    except ValueError:
+        pass
+    try:
+        return json.loads(base64.b64decode(text, validate=False).decode("utf-8-sig"))
+    except (ValueError, UnicodeDecodeError):
+        pass
+    first = text[:1]
+    kind = ("a letter or digit" if first.isalnum() else
+            "an invisible character" if not first.isprintable() else f"the character {first!r}")
+    print("firebase_config: GOOGLE_SERVICES_JSON is not valid JSON "
+          f"({len(text)} characters, starting with {kind}). It should be the whole "
+          "google-services.json file, starting with '{'. Re-paste it into the secret.",
+          file=sys.stderr)
+    return None
+
+
 def main() -> int:
-    raw = sys.stdin.read().strip()
-    if not raw:
+    raw = sys.stdin.read()
+    if not raw.strip():
         print("firebase_config: no google-services.json given; push stays off")
         return 0
-    data = json.loads(raw)
+    data = parse(raw)
+    if data is None:
+        return 1
     project = data["project_info"]
     client = next(
         (c for c in data["client"]
