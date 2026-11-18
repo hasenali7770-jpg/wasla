@@ -108,6 +108,13 @@ From now on this repeats **automatically** after every merge into `main`.
 
 ---
 
+## Optional: moderator alerts on your phone
+
+When someone reports child abuse or terrorism, Wasla can post an alert to a chat channel:
+
+1. Create a free **Slack** workspace and add an "Incoming Webhook" to a channel such as `#wasla-alerts`. (Mattermost works too.) Copy the webhook URL.
+2. Ask your engineer, or Claude, to add `ALERT_WEBHOOK_URL=<that URL>` to `/opt/wasla/.env` on the server and restart. It is a secret: never post it in a chat.
+
 ## Stopping or deleting
 
 - **Hetzner:** open the server → **Delete**. Billing stops right away (charged by the hour).

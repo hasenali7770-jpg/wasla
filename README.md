@@ -2,7 +2,7 @@
 
 A cloud messaging app for Android, iOS, web and desktop. Arabic (RTL) is the default language, with English as the second.
 
-**Current phase: Lean MVP, Sprint 1 (auth/OTP + moderation).** Latest progress: [week 1](docs/progress/2026-11-18-week-1.md).
+**Current phase: Lean MVP, Sprint 2 (chats).** Latest progress: [week 1](docs/progress/2026-11-18-week-1.md).
 
 ## Documents
 
@@ -102,5 +102,6 @@ cd app && flutter run --dart-define=WASLA_WS_URL=ws://10.0.2.2:8080/ws
 - [x] Sprint 1 backend: phone/OTP login with anti-fraud limits, two-step password, sessions, account deletion
 - [x] Sprint 1 moderation: reports with evidence, review queue with deadlines, takedowns, bans, audit log, legal-request register
 - [x] Sprint 1 app: Flutter project, Arabic/English (RTL/LTR), login screens, devices screen
-- [ ] Sprint 2: chats (text messages, chat list, read receipts, typing), in-app Report/Block buttons
+- [x] Sprint 2: private chats and Saved Messages, chat list, reply/edit/delete/forward/pin, read receipts, typing, username/contact search, in-app Report/Block, moderator alerts
+- [ ] Sprint 3: on-device message storage (offline reading), push notifications, media (photos, video, files, voice)
 - [ ] Legal review of CMC obligations; SMS providers; brand assets

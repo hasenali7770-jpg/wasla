@@ -355,6 +355,414 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'حدث خطأ ما. حاول مجدداً'**
   String get errGeneric;
+
+  /// No description provided for @savedMessages.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرسائل المحفوظة'**
+  String get savedMessages;
+
+  /// No description provided for @deletedAccount.
+  ///
+  /// In ar, this message translates to:
+  /// **'حساب محذوف'**
+  String get deletedAccount;
+
+  /// No description provided for @newChat.
+  ///
+  /// In ar, this message translates to:
+  /// **'محادثة جديدة'**
+  String get newChat;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'ابحث باسم المستخدم أو رقم الهاتف'**
+  String get searchHint;
+
+  /// No description provided for @noResults.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد نتائج'**
+  String get noResults;
+
+  /// No description provided for @notOnWasla.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الرقم غير مسجّل في وصلة'**
+  String get notOnWasla;
+
+  /// No description provided for @contactsSection.
+  ///
+  /// In ar, this message translates to:
+  /// **'جهات الاتصال'**
+  String get contactsSection;
+
+  /// No description provided for @globalSection.
+  ///
+  /// In ar, this message translates to:
+  /// **'نتائج عامة'**
+  String get globalSection;
+
+  /// No description provided for @noChatsYet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد محادثات بعد. ابدأ محادثة جديدة.'**
+  String get noChatsYet;
+
+  /// No description provided for @loadError.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر تحميل المحادثات'**
+  String get loadError;
+
+  /// No description provided for @messageHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'رسالة'**
+  String get messageHint;
+
+  /// No description provided for @typing.
+  ///
+  /// In ar, this message translates to:
+  /// **'يكتب…'**
+  String get typing;
+
+  /// No description provided for @edited.
+  ///
+  /// In ar, this message translates to:
+  /// **'معدّلة'**
+  String get edited;
+
+  /// No description provided for @forwardedFrom.
+  ///
+  /// In ar, this message translates to:
+  /// **'معاد توجيهها من {name}'**
+  String forwardedFrom(String name);
+
+  /// No description provided for @locationMsg.
+  ///
+  /// In ar, this message translates to:
+  /// **'📍 موقع'**
+  String get locationMsg;
+
+  /// No description provided for @contactMsg.
+  ///
+  /// In ar, this message translates to:
+  /// **'👤 جهة اتصال'**
+  String get contactMsg;
+
+  /// No description provided for @unsupportedMsg.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذه الرسالة غير مدعومة، يرجى تحديث التطبيق'**
+  String get unsupportedMsg;
+
+  /// No description provided for @you.
+  ///
+  /// In ar, this message translates to:
+  /// **'أنت'**
+  String get you;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In ar, this message translates to:
+  /// **'أمس'**
+  String get yesterday;
+
+  /// No description provided for @reply.
+  ///
+  /// In ar, this message translates to:
+  /// **'رد'**
+  String get reply;
+
+  /// No description provided for @copy.
+  ///
+  /// In ar, this message translates to:
+  /// **'نسخ'**
+  String get copy;
+
+  /// No description provided for @edit.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعديل'**
+  String get edit;
+
+  /// No description provided for @forward.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة توجيه'**
+  String get forward;
+
+  /// No description provided for @forwardToSaved.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلى الرسائل المحفوظة'**
+  String get forwardToSaved;
+
+  /// No description provided for @chooseChat.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر محادثة'**
+  String get chooseChat;
+
+  /// No description provided for @pin.
+  ///
+  /// In ar, this message translates to:
+  /// **'تثبيت'**
+  String get pin;
+
+  /// No description provided for @unpin.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء التثبيت'**
+  String get unpin;
+
+  /// No description provided for @delete.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف'**
+  String get delete;
+
+  /// No description provided for @deleteForMe.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف لديّ فقط'**
+  String get deleteForMe;
+
+  /// No description provided for @deleteForEveryone.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف لدى الجميع'**
+  String get deleteForEveryone;
+
+  /// No description provided for @report.
+  ///
+  /// In ar, this message translates to:
+  /// **'إبلاغ'**
+  String get report;
+
+  /// No description provided for @block.
+  ///
+  /// In ar, this message translates to:
+  /// **'حظر'**
+  String get block;
+
+  /// No description provided for @unblock.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء الحظر'**
+  String get unblock;
+
+  /// No description provided for @blockConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'حظر {name}؟ لن يتمكن أي منكما من مراسلة الآخر.'**
+  String blockConfirm(String name);
+
+  /// No description provided for @youBlocked.
+  ///
+  /// In ar, this message translates to:
+  /// **'لقد حظرت هذا المستخدم'**
+  String get youBlocked;
+
+  /// No description provided for @copied.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم النسخ'**
+  String get copied;
+
+  /// No description provided for @sendFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم تُرسل — اضغط لإعادة المحاولة'**
+  String get sendFailed;
+
+  /// No description provided for @retry.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة المحاولة'**
+  String get retry;
+
+  /// No description provided for @discard.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف'**
+  String get discard;
+
+  /// No description provided for @editing.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعديل الرسالة'**
+  String get editing;
+
+  /// No description provided for @replyingTo.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرد على {name}'**
+  String replyingTo(String name);
+
+  /// No description provided for @pinChat.
+  ///
+  /// In ar, this message translates to:
+  /// **'تثبيت المحادثة'**
+  String get pinChat;
+
+  /// No description provided for @unpinChat.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء تثبيت المحادثة'**
+  String get unpinChat;
+
+  /// No description provided for @mute.
+  ///
+  /// In ar, this message translates to:
+  /// **'كتم الإشعارات'**
+  String get mute;
+
+  /// No description provided for @unmute.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء الكتم'**
+  String get unmute;
+
+  /// No description provided for @archive.
+  ///
+  /// In ar, this message translates to:
+  /// **'أرشفة'**
+  String get archive;
+
+  /// No description provided for @unarchive.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء الأرشفة'**
+  String get unarchive;
+
+  /// No description provided for @archived.
+  ///
+  /// In ar, this message translates to:
+  /// **'الأرشيف'**
+  String get archived;
+
+  /// No description provided for @clearHistory.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح المحادثة'**
+  String get clearHistory;
+
+  /// No description provided for @reportTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'الإبلاغ'**
+  String get reportTitle;
+
+  /// No description provided for @reportWhy.
+  ///
+  /// In ar, this message translates to:
+  /// **'ما المشكلة؟'**
+  String get reportWhy;
+
+  /// No description provided for @reportComment.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل إضافية (اختياري)'**
+  String get reportComment;
+
+  /// No description provided for @reportAlsoBlock.
+  ///
+  /// In ar, this message translates to:
+  /// **'حظر هذا المستخدم أيضاً'**
+  String get reportAlsoBlock;
+
+  /// No description provided for @reportSend.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال البلاغ'**
+  String get reportSend;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In ar, this message translates to:
+  /// **'شكراً، وصل بلاغك وسيراجعه فريق الإشراف.'**
+  String get reportSent;
+
+  /// No description provided for @reasonSpam.
+  ///
+  /// In ar, this message translates to:
+  /// **'رسائل مزعجة'**
+  String get reasonSpam;
+
+  /// No description provided for @reasonScam.
+  ///
+  /// In ar, this message translates to:
+  /// **'احتيال'**
+  String get reasonScam;
+
+  /// No description provided for @reasonViolence.
+  ///
+  /// In ar, this message translates to:
+  /// **'عنف'**
+  String get reasonViolence;
+
+  /// No description provided for @reasonTerrorism.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرهاب'**
+  String get reasonTerrorism;
+
+  /// No description provided for @reasonChildAbuse.
+  ///
+  /// In ar, this message translates to:
+  /// **'إساءة للأطفال'**
+  String get reasonChildAbuse;
+
+  /// No description provided for @reasonPornography.
+  ///
+  /// In ar, this message translates to:
+  /// **'محتوى إباحي'**
+  String get reasonPornography;
+
+  /// No description provided for @reasonIllegalGoods.
+  ///
+  /// In ar, this message translates to:
+  /// **'بضائع ممنوعة'**
+  String get reasonIllegalGoods;
+
+  /// No description provided for @reasonPersonalData.
+  ///
+  /// In ar, this message translates to:
+  /// **'نشر بيانات شخصية'**
+  String get reasonPersonalData;
+
+  /// No description provided for @reasonHarassment.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحرّش أو مضايقة'**
+  String get reasonHarassment;
+
+  /// No description provided for @reasonFakeAccount.
+  ///
+  /// In ar, this message translates to:
+  /// **'حساب مزيّف'**
+  String get reasonFakeAccount;
+
+  /// No description provided for @reasonCopyright.
+  ///
+  /// In ar, this message translates to:
+  /// **'حقوق نشر'**
+  String get reasonCopyright;
+
+  /// No description provided for @reasonOther.
+  ///
+  /// In ar, this message translates to:
+  /// **'أخرى'**
+  String get reasonOther;
+
+  /// No description provided for @errRateLimitedMinutes.
+  ///
+  /// In ar, this message translates to:
+  /// **'محاولات كثيرة. حاول بعد {minutes, plural, =1{دقيقة واحدة} =2{دقيقتين} few{{minutes} دقائق} other{{minutes} دقيقة}}'**
+  String errRateLimitedMinutes(int minutes);
 }
 
 class _AppLocalizationsDelegate

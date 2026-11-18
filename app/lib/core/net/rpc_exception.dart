@@ -23,7 +23,9 @@ class RpcException implements Exception {
         ErrorCode.ERROR_CODE_PHONE_CODE_EXPIRED => l.errCodeExpired,
         ErrorCode.ERROR_CODE_PHONE_BANNED => l.errPhoneBanned,
         ErrorCode.ERROR_CODE_PASSWORD_INVALID => l.errPasswordInvalid,
-        ErrorCode.ERROR_CODE_RATE_LIMITED => l.errRateLimited(retryAfterSeconds),
+        ErrorCode.ERROR_CODE_RATE_LIMITED => retryAfterSeconds > 90
+            ? l.errRateLimitedMinutes((retryAfterSeconds / 60).ceil())
+            : l.errRateLimited(retryAfterSeconds),
         ErrorCode.ERROR_CODE_UNAVAILABLE => l.errNetwork,
         ErrorCode.ERROR_CODE_UPDATE_REQUIRED => l.errUpdateRequired,
         _ => l.errGeneric,

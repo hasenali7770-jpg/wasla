@@ -1,6 +1,6 @@
 # Wasla — Moderation and Legal Requests
 
-Status: **Built in Sprint 1** (backend and admin panel). The in-app reporting screens arrive in Sprint 2, together with chats.
+Status: **Built.** Backend and admin panel in Sprint 1; in-app Report/Block buttons, takedown enforcement and moderator alerts in Sprint 2.
 
 Why this was built first: the CMC blocked Telegram in Iraq on 16 Nov 2026 for failing to deal with illegal content ([proposal §0](00-proposal-lean-mvp.md)). Wasla must be able to show, at any time, that it receives reports, acts on them quickly, and keeps a complete record.
 
@@ -81,10 +81,10 @@ Roles: `1` moderator, `2` senior moderator, `3` admin.
 
 | Item | When |
 |---|---|
-| Report and Block buttons in the app (long-press a message, user profile, chat menu) | Sprint 2, with chats |
-| Messaging refuses reads and writes in banned chats, and banned users' messages are hidden from new members | Sprint 2 |
+| ~~Report and Block buttons in the app~~ | ✅ Sprint 2: long-press a message → Report; chat menu → Report / Block; "report and block" in one step |
+| ~~Messaging refuses taken-down chats~~ | ✅ Sprint 2: they vanish from the chat list and history, and nobody can post in them |
 | Media blocklist check on upload | Weeks 9–10, with media |
 | Moderator team: at least 2 Arabic-speaking moderators covering 08:00–24:00 Baghdad time, plus an on-call senior moderator for critical reports at night | Before public launch (your hiring decision) |
-| Alert (SMS or Telegram-alternative) to the on-call moderator when a critical report arrives | Sprint 2 |
+| ~~Alert to the on-call moderator when a critical report arrives~~ | ✅ Sprint 2: set `WASLA_ALERT_WEBHOOK_URL` to a Slack/Mattermost-style webhook; it is called for every child-abuse or terrorism report |
 | Monthly transparency numbers (reports received, actioned, median time to act) for the CMC | After launch |
 | Legal: confirm takedown deadlines, user-data request procedure, and child-abuse reporting obligations under Iraqi law | Counsel |

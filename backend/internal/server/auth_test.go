@@ -6,18 +6,22 @@ import (
 
 	pb "wasla/backend/gen/proto/wasla/v1"
 	"wasla/backend/internal/auth"
+	"wasla/backend/internal/chats"
+	"wasla/backend/internal/contacts"
+	"wasla/backend/internal/messaging"
 	"wasla/backend/internal/moderation"
 	"wasla/backend/internal/updates"
 	"wasla/backend/internal/users"
 )
 
 func TestRouterMatchesProto(t *testing.T) {
-	r, err := NewRouter(&auth.Service{}, &users.Service{}, &updates.Service{}, &moderation.Reports{})
+	r, err := NewRouter(&auth.Service{}, &users.Service{}, &updates.Service{}, &moderation.Reports{},
+		&chats.Service{}, &messaging.Service{}, &contacts.Service{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := len(r.Methods()); n != 19 {
-		t.Fatalf("expected 19 Sprint 1 methods, got %d", n)
+	if n := len(r.Methods()); n != 43 {
+		t.Fatalf("expected 43 methods (Sprint 1 + 2), got %d", n)
 	}
 }
 

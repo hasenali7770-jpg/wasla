@@ -9,18 +9,21 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasla/core/auth/auth_api.dart';
+import 'package:wasla/core/chat/chat_api.dart';
 import 'package:wasla/core/net/connection.dart';
 import 'package:wasla/core/net/rpc_exception.dart';
 import 'package:wasla/gen/proto/wasla/v1/auth.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/common.pbenum.dart';
 import 'package:wasla/gen/proto/wasla/v1/frame.pbenum.dart';
+import 'package:wasla/gen/proto/wasla/v1/messages.pb.dart';
+import 'package:fixnum/fixnum.dart';
 
 final _url = io.Platform.environment['WASLA_E2E_URL'];
 
 WaslaConnection _conn() => WaslaConnection(
-      url: Uri.parse(_url!),
-      info: const ClientInfo(platform: Platform.PLATFORM_ANDROID, appVersion: '0.1.0', deviceModel: 'e2e', langCode: 'ar'),
-    );
+  url: Uri.parse(_url!),
+  info: const ClientInfo(platform: Platform.PLATFORM_ANDROID, appVersion: '0.1.0', deviceModel: 'e2e', langCode: 'ar'),
+);
 
 void main() {
   test('sign up, reconnect with token, sessions, logout', () async {
@@ -43,12 +46,14 @@ void main() {
     final signIn = await api.signIn(phone, sent.codeHash, code);
     expect(signIn.hasSignUpRequired(), isTrue);
 
-    final up = await api.signUp(SignUpRequest(
-      phone: phone,
-      codeHash: sent.codeHash,
-      firstName: 'اختبار',
-      termsVersion: signIn.signUpRequired.termsVersion,
-    ));
+    final up = await api.signUp(
+      SignUpRequest(
+        phone: phone,
+        codeHash: sent.codeHash,
+        firstName: 'اختبار',
+        termsVersion: signIn.signUpRequired.termsVersion,
+      ),
+    );
     final token = up.authorization.sessionToken;
     expect(up.authorization.user.firstName, 'اختبار');
     await conn.close();
@@ -67,5 +72,47 @@ void main() {
     final conn3 = _conn()..token = token;
     expect((await conn3.connect()).authenticated, isFalse, reason: 'token must be dead after logout');
     await conn3.close();
+  }, skip: _url == null ? 'WASLA_E2E_URL not set' : null);
+
+  test('two users message each other live', () async {
+    Future<(WaslaConnection, Int64)> newUser(String name) async {
+      final phone = '+964780${1000000 + Random().nextInt(8999999)}';
+      final conn = _conn();
+      final api = RemoteAuthApi(conn);
+      final sent = await api.sendCode(phone, 'dev');
+      final signIn = await api.signIn(phone, sent.codeHash, sent.devCode);
+      final up = await api.signUp(
+        SignUpRequest(
+          phone: phone,
+          codeHash: sent.codeHash,
+          firstName: name,
+          termsVersion: signIn.signUpRequired.termsVersion,
+        ),
+      );
+      return (conn, up.authorization.user.id);
+    }
+
+    final (aliConn, _) = await newUser('علي');
+    final (saraConn, saraId) = await newUser('سارة');
+    final incoming = saraConn.updates.firstWhere((p) => p.updates.any((u) => u.hasNewMessage()));
+
+    final r = await RemoteChatApi(aliConn).send(
+      SendMessageRequest(
+        peer: userPeer(saraId),
+        randomId: Int64(42),
+        content: InputContent(text: FormattedText(text: 'مرحبا من الاختبار')),
+      ),
+    );
+    expect(r.message.seq, Int64.ONE);
+
+    final push = await incoming.timeout(const Duration(seconds: 5));
+    final m = push.updates.firstWhere((u) => u.hasNewMessage()).newMessage.message;
+    expect(m.content.text.text.text, 'مرحبا من الاختبار');
+    expect(m.randomId, Int64.ZERO, reason: 'random_id is only shown to the sender');
+
+    final dialogs = await RemoteChatApi(saraConn).listDialogs();
+    expect(dialogs.dialogs.single.unreadCount, 1);
+    await aliConn.close();
+    await saraConn.close();
   }, skip: _url == null ? 'WASLA_E2E_URL not set' : null);
 }
