@@ -25,6 +25,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"wasla/backend/internal/auth"
+	"wasla/backend/internal/media"
 	"wasla/backend/internal/moderation"
 	"wasla/backend/internal/platform/config"
 	"wasla/backend/internal/platform/db"
@@ -98,7 +99,21 @@ func run(log *slog.Logger, args []string) error {
 	authCfg.CodeSecret, authCfg.PhonePepper = cfg.CodeSecret, cfg.PhonePepper
 	authCfg.ExposeDevCode = cfg.Env == "dev"
 
+	var store *media.Storage
+	if cfg.S3Endpoint != "" {
+		store, err = media.NewStorage(ctx, media.StorageConfig{Endpoint: cfg.S3Endpoint, Secure: cfg.S3Secure,
+			PublicURL: cfg.S3PublicURL, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, Bucket: cfg.S3Bucket, Region: cfg.S3Region})
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Warn("WASLA_S3_ENDPOINT not set: photos and files are disabled")
+	}
+	mediaCfg := media.DefaultConfig()
+	mediaCfg.MaxUploadBytes = cfg.MaxUploadBytes
+
 	srv, err := server.New(ctx, server.Deps{
+		Storage: store, MediaCfg: mediaCfg,
 		DB: pool, Redis: rdb, Log: log, IDs: ids, SMS: sms, Attestor: attestor, AuthCfg: authCfg,
 		SLA: moderation.DefaultSLA, MinAppVersion: cfg.MinAppVersion, TrustProxy: cfg.TrustProxy,
 		OriginPatterns: cfg.OriginPatterns, SecureCookies: cfg.Env != "dev", AlertWebhookURL: cfg.AlertWebhookURL,

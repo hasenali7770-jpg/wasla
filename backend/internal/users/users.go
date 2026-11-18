@@ -22,8 +22,10 @@ func LoadSelf(ctx context.Context, q Querier, id int64) (*pb.User, error) {
 	u := &pb.User{Id: id, IsSelf: true}
 	var username, ph *string
 	var photo *int64
-	err := q.QueryRow(ctx, `SELECT first_name, last_name, username, phone, bio, photo_id FROM users WHERE id = $1`, id).
-		Scan(&u.FirstName, &u.LastName, &username, &ph, &u.Bio, &photo)
+	var thumb []byte
+	err := q.QueryRow(ctx, `SELECT first_name, last_name, username, phone, bio, photo_id,
+		(SELECT thumbhash FROM media_files WHERE id = users.photo_id) FROM users WHERE id = $1`, id).
+		Scan(&u.FirstName, &u.LastName, &username, &ph, &u.Bio, &photo, &thumb)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +36,7 @@ func LoadSelf(ctx context.Context, q Querier, id int64) (*pb.User, error) {
 		u.Phone = *ph
 	}
 	if photo != nil {
-		u.Photo = &pb.Avatar{MediaId: *photo}
+		u.Photo = &pb.Avatar{MediaId: *photo, Thumbhash: thumb}
 	}
 	return u, nil
 }
@@ -51,7 +53,12 @@ func LoadPublic(ctx context.Context, q Querier, viewer, id int64) (*pb.User, err
 	var photo *int64
 	var deleted bool
 	err := q.QueryRow(ctx, `
-		SELECT u.first_name, u.last_name, u.username, u.bio, u.photo_id, u.deleted_at IS NOT NULL, u.phone,
+		SELECT u.first_name, u.last_name, u.username, u.bio,
+		       CASE WHEN COALESCE((SELECT rule FROM privacy_rules WHERE user_id = u.id AND key = 3), 1) = 3
+		              OR (COALESCE((SELECT rule FROM privacy_rules WHERE user_id = u.id AND key = 3), 1) = 2
+		                  AND NOT EXISTS (SELECT 1 FROM contacts c WHERE c.owner_id = u.id AND c.contact_user_id = $1))
+		            THEN NULL ELSE u.photo_id END,
+		       u.deleted_at IS NOT NULL, u.phone,
 		       EXISTS (SELECT 1 FROM user_blocks b WHERE b.user_id = $1 AND b.blocked_user_id = u.id),
 		       EXISTS (SELECT 1 FROM contacts c WHERE c.owner_id = $1 AND c.contact_user_id = u.id),
 		       EXISTS (SELECT 1 FROM contacts c WHERE c.owner_id = u.id AND c.contact_user_id = $1)
@@ -72,6 +79,7 @@ func LoadPublic(ctx context.Context, q Querier, viewer, id int64) (*pb.User, err
 	}
 	if photo != nil && !deleted {
 		u.Photo = &pb.Avatar{MediaId: *photo}
+		_ = q.QueryRow(ctx, `SELECT thumbhash FROM media_files WHERE id = $1`, *photo).Scan(&u.Photo.Thumbhash)
 	}
 	return u, nil
 }

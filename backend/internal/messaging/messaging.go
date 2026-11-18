@@ -15,6 +15,7 @@ import (
 
 	pb "wasla/backend/gen/proto/wasla/v1"
 	"wasla/backend/internal/chats"
+	"wasla/backend/internal/media"
 	"wasla/backend/internal/msgstore"
 	"wasla/backend/internal/platform/db"
 	"wasla/backend/internal/platform/errs"
@@ -72,7 +73,7 @@ func (s *Service) limit(ctx context.Context, key string, n int64, window time.Du
 }
 
 // encodeContent validates client content and maps it to a storage row.
-func (s *Service) encodeContent(ctx context.Context, in *pb.InputContent) (msgstore.New, error) {
+func (s *Service) encodeContent(ctx context.Context, me int64, in *pb.InputContent) (msgstore.New, error) {
 	var n msgstore.New
 	switch k := in.GetKind().(type) {
 	case *pb.InputContent_Text:
@@ -110,10 +111,39 @@ func (s *Service) encodeContent(ctx context.Context, in *pb.InputContent) (msgst
 		}
 		n.Kind, n.Extra = msgstore.KindContact, b
 	case *pb.InputContent_Media:
-		return n, errs.New(pb.ErrorCode_ERROR_CODE_UNIMPLEMENTED, "photos, videos and files arrive in a later update")
+		return s.encodeMedia(ctx, me, k.Media)
 	default:
 		return n, errs.Invalid("content is required")
 	}
+	return n, nil
+}
+
+// encodeMedia attaches an uploaded photo or file. Only the uploader can send
+// it the first time; forwarding reuses the stored file.
+func (s *Service) encodeMedia(ctx context.Context, me int64, in *pb.InputMedia) (msgstore.New, error) {
+	var n msgstore.New
+	r, err := media.Load(ctx, s.DB, `id = $1 AND owner_id = $2`, in.GetMediaId(), me)
+	if err != nil {
+		return n, err
+	}
+	if r.Status != pb.MediaStatus_MEDIA_STATUS_READY {
+		return n, errs.New(pb.ErrorCode_ERROR_CODE_UPLOAD_INCOMPLETE, "finish the upload first")
+	}
+	switch r.Kind {
+	case pb.MediaKind_MEDIA_KIND_PHOTO:
+		n.Kind = msgstore.KindPhoto
+	case pb.MediaKind_MEDIA_KIND_DOCUMENT:
+		n.Kind = msgstore.KindDocument
+	default:
+		return n, errs.New(pb.ErrorCode_ERROR_CODE_UNIMPLEMENTED, "video and voice messages arrive in a later update")
+	}
+	if n.Text, n.Entities, err = msgstore.EncodeCaption(in.GetCaption()); err != nil {
+		return n, err
+	}
+	if n.Extra, err = msgstore.EncodeJSON(r.Proto()); err != nil {
+		return n, err
+	}
+	n.MediaID = r.ID
 	return n, nil
 }
 
@@ -138,7 +168,7 @@ func (s *Service) SendMessage(ctx context.Context, c *rpc.Caller, req *pb.SendMe
 	if err := s.limit(ctx, "send:"+itoa(me), 60, time.Minute); err != nil {
 		return nil, err
 	}
-	content, err := s.encodeContent(ctx, req.GetContent())
+	content, err := s.encodeContent(ctx, me, req.GetContent())
 	if err != nil {
 		return nil, err
 	}
@@ -380,6 +410,9 @@ func (s *Service) ForwardMessages(ctx context.Context, c *rpc.Caller, req *pb.Fo
 			}
 			n := msgstore.New{SenderID: me, RandomID: req.GetRandomIds()[i], Kind: r.Kind, Text: r.Text,
 				Entities: r.Entities, Extra: r.Extra}
+			if r.MediaID != nil {
+				n.MediaID = *r.MediaID // the same stored file; nothing is copied
+			}
 			if !req.GetHideSender() {
 				if n.Fwd, err = s.forwardInfo(ctx, tx, r, me); err != nil {
 					return err
