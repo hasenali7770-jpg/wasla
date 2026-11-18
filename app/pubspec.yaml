@@ -29,10 +29,29 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: 6.0.0
+  flutter_launcher_icons: 0.14.4
+
+# App icons from the brand kit (app/assets/brand/README.md).
+# Regenerate with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/brand/wasla-icon-1024.png"
+  adaptive_icon_background: "#111111"
+  adaptive_icon_foreground: "assets/brand/android-adaptive-foreground-432.png"
+  adaptive_icon_monochrome: "assets/brand/android-monochrome-432.png"
+  web:
+    generate: true
+    image_path: "assets/brand/wasla-icon-512.png"
+    background_color: "#111111"
+    theme_color: "#0F6E35"
 
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    - assets/brand/wasla-icon-rounded-1024.png
   # Cairo (SIL OFL 1.1, assets/fonts/OFL-Cairo.txt), the brand font (brand kit v2).
   # Bundled so Arabic renders correctly offline and on every platform.
   fonts:
@@ -45,3 +64,5 @@ flutter:
           weight: 600
         - asset: assets/fonts/Cairo_700Bold.ttf
           weight: 700
+        - asset: assets/fonts/Cairo_800ExtraBold.ttf
+          weight: 800

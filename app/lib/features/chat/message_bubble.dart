@@ -40,8 +40,9 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final bg = mine ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest;
-    final fg = mine ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface;
+    // Brand kit: outgoing bubbles are yellow with black text.
+    final bg = mine ? theme.colorScheme.secondary : theme.colorScheme.surfaceContainerHighest;
+    final fg = mine ? theme.colorScheme.onSecondary : theme.colorScheme.onSurface;
     final small = theme.textTheme.bodySmall?.copyWith(color: fg.withValues(alpha: 0.7));
     const r = Radius.circular(16);
     return Align(
@@ -89,7 +90,7 @@ class MessageBubble extends StatelessWidget {
                     Tick.pending => Icon(Icons.schedule, size: 14, color: small?.color),
                     Tick.failed => Icon(Icons.error_outline, size: 14, color: theme.colorScheme.error),
                     Tick.sent => Icon(Icons.done, size: 14, color: small?.color),
-                    Tick.read => Icon(Icons.done_all, size: 14, color: theme.colorScheme.primary),
+                    Tick.read => Icon(Icons.done_all, size: 14, color: mine ? theme.colorScheme.primary : null),
                     Tick.none => const SizedBox.shrink(),
                   },
                 ],
