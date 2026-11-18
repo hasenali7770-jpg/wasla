@@ -17,7 +17,7 @@
 </section>
 
 <h2>الأدلة (نسخة محفوظة وقت البلاغ)</h2>
-{{with .Evidence.Chat}}<p>المحادثة: <bdi>{{.Title}}</bdi> · رقم {{.ID}} · {{.MemberCount}} عضو</p>{{end}}
+{{with .Evidence.Chat}}<p>المحادثة: {{if .Title}}<bdi>{{.Title}}</bdi> · {{else if eq .Type 1}}محادثة خاصة · {{end}}رقم {{.ID}} · {{.MemberCount}} عضو</p>{{end}}
 {{if .Evidence.Messages}}
 <table>
   <thead><tr><th>رقم الرسالة</th><th>المرسل</th><th>التاريخ</th><th>النص</th><th>وسائط</th></tr></thead>
