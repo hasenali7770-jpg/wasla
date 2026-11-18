@@ -63,7 +63,11 @@ backend/internal/
   users/       profiles, blocking (privacy engine is still minimal: phone hidden from others)
   updates/     per-user pts log: Append (in caller's tx) → Publish (after commit) → GetDifference
   moderation/  Report RPC, staff Actions (all audited), admin panel (html/template, embedded)
-  messaging/ chats/ contacts/ media/ push/ presence/   ← Sprint 2+ (stubs or in progress)
+  msgstore/    messages table access + proto conversion (the ScyllaDB seam)
+  messaging/   MessagesService: send/edit/delete/forward/history/read/typing/pin
+  chats/       membership checks (taken-down chats look like NOT_FOUND), private chats, chat list
+  contacts/    phone-book import with anti-scraping limits
+  media/ push/ presence/   ← not built yet (stubs)
   platform/    config, db, errs, migrate, password, phone, ratelimit, rpc, snowflake, totp
   server/      wiring + the integration test suite (real Postgres, miniredis, real WebSocket)
 proto/wasla/v1  the API contract (buf, STANDARD lint, breaking-change check on PRs)
@@ -129,7 +133,7 @@ Production goes to Bahrain/UAE unless counsel says it must be in Iraq (decision 
 2. **Device attestation.** `auth.Attestor` accepts only `"dev"`. The Play Integrity verifier is needed before launch, otherwise every caller gets the "unattested" (halved) limits.
 3. **Rate limits** are fixed-window counters in Redis. That's acceptable now; consider sliding windows if abuse shows burst patterns at window edges.
 4. **No metrics endpoint yet** (`/metrics`). Add Prometheus before the first public beta.
-5. **Admin panel** has no automatic alerts. Critical reports only log a warning; an alert to the on-call moderator is planned for Sprint 2.
+5. **Moderator alerts** go to one webhook (`WASLA_ALERT_WEBHOOK_URL`). There's no escalation if nobody acts; consider paging escalation before launch.
 6. **Privacy engine** is minimal: phone numbers are never shown to others, and last-seen/photo rules are not enforced yet (Sprint 2–3).
 7. **Push notifications** (FCM) are not built yet.
 8. **Load testing** has not been done (planned for week 14, with k6).

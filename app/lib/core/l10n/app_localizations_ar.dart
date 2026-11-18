@@ -165,4 +165,224 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errGeneric => 'حدث خطأ ما. حاول مجدداً';
+
+  @override
+  String get savedMessages => 'الرسائل المحفوظة';
+
+  @override
+  String get deletedAccount => 'حساب محذوف';
+
+  @override
+  String get newChat => 'محادثة جديدة';
+
+  @override
+  String get searchHint => 'ابحث باسم المستخدم أو رقم الهاتف';
+
+  @override
+  String get noResults => 'لا توجد نتائج';
+
+  @override
+  String get notOnWasla => 'هذا الرقم غير مسجّل في وصلة';
+
+  @override
+  String get contactsSection => 'جهات الاتصال';
+
+  @override
+  String get globalSection => 'نتائج عامة';
+
+  @override
+  String get noChatsYet => 'لا توجد محادثات بعد. ابدأ محادثة جديدة.';
+
+  @override
+  String get loadError => 'تعذّر تحميل المحادثات';
+
+  @override
+  String get messageHint => 'رسالة';
+
+  @override
+  String get typing => 'يكتب…';
+
+  @override
+  String get edited => 'معدّلة';
+
+  @override
+  String forwardedFrom(String name) {
+    return 'معاد توجيهها من $name';
+  }
+
+  @override
+  String get locationMsg => '📍 موقع';
+
+  @override
+  String get contactMsg => '👤 جهة اتصال';
+
+  @override
+  String get unsupportedMsg => 'هذه الرسالة غير مدعومة، يرجى تحديث التطبيق';
+
+  @override
+  String get you => 'أنت';
+
+  @override
+  String get yesterday => 'أمس';
+
+  @override
+  String get reply => 'رد';
+
+  @override
+  String get copy => 'نسخ';
+
+  @override
+  String get edit => 'تعديل';
+
+  @override
+  String get forward => 'إعادة توجيه';
+
+  @override
+  String get forwardToSaved => 'إلى الرسائل المحفوظة';
+
+  @override
+  String get chooseChat => 'اختر محادثة';
+
+  @override
+  String get pin => 'تثبيت';
+
+  @override
+  String get unpin => 'إلغاء التثبيت';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get deleteForMe => 'حذف لديّ فقط';
+
+  @override
+  String get deleteForEveryone => 'حذف لدى الجميع';
+
+  @override
+  String get report => 'إبلاغ';
+
+  @override
+  String get block => 'حظر';
+
+  @override
+  String get unblock => 'إلغاء الحظر';
+
+  @override
+  String blockConfirm(String name) {
+    return 'حظر $name؟ لن يتمكن أي منكما من مراسلة الآخر.';
+  }
+
+  @override
+  String get youBlocked => 'لقد حظرت هذا المستخدم';
+
+  @override
+  String get copied => 'تم النسخ';
+
+  @override
+  String get sendFailed => 'لم تُرسل — اضغط لإعادة المحاولة';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get discard => 'حذف';
+
+  @override
+  String get editing => 'تعديل الرسالة';
+
+  @override
+  String replyingTo(String name) {
+    return 'الرد على $name';
+  }
+
+  @override
+  String get pinChat => 'تثبيت المحادثة';
+
+  @override
+  String get unpinChat => 'إلغاء تثبيت المحادثة';
+
+  @override
+  String get mute => 'كتم الإشعارات';
+
+  @override
+  String get unmute => 'إلغاء الكتم';
+
+  @override
+  String get archive => 'أرشفة';
+
+  @override
+  String get unarchive => 'إلغاء الأرشفة';
+
+  @override
+  String get archived => 'الأرشيف';
+
+  @override
+  String get clearHistory => 'مسح المحادثة';
+
+  @override
+  String get reportTitle => 'الإبلاغ';
+
+  @override
+  String get reportWhy => 'ما المشكلة؟';
+
+  @override
+  String get reportComment => 'تفاصيل إضافية (اختياري)';
+
+  @override
+  String get reportAlsoBlock => 'حظر هذا المستخدم أيضاً';
+
+  @override
+  String get reportSend => 'إرسال البلاغ';
+
+  @override
+  String get reportSent => 'شكراً، وصل بلاغك وسيراجعه فريق الإشراف.';
+
+  @override
+  String get reasonSpam => 'رسائل مزعجة';
+
+  @override
+  String get reasonScam => 'احتيال';
+
+  @override
+  String get reasonViolence => 'عنف';
+
+  @override
+  String get reasonTerrorism => 'إرهاب';
+
+  @override
+  String get reasonChildAbuse => 'إساءة للأطفال';
+
+  @override
+  String get reasonPornography => 'محتوى إباحي';
+
+  @override
+  String get reasonIllegalGoods => 'بضائع ممنوعة';
+
+  @override
+  String get reasonPersonalData => 'نشر بيانات شخصية';
+
+  @override
+  String get reasonHarassment => 'تحرّش أو مضايقة';
+
+  @override
+  String get reasonFakeAccount => 'حساب مزيّف';
+
+  @override
+  String get reasonCopyright => 'حقوق نشر';
+
+  @override
+  String get reasonOther => 'أخرى';
+
+  @override
+  String errRateLimitedMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes دقيقة',
+      few: '$minutes دقائق',
+      two: 'دقيقتين',
+      one: 'دقيقة واحدة',
+    );
+    return 'محاولات كثيرة. حاول بعد $_temp0';
+  }
 }

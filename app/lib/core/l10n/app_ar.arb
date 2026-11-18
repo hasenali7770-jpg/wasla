@@ -4,37 +4,65 @@
   "connecting": "جارٍ الاتصال…",
   "continueButton": "متابعة",
   "cancel": "إلغاء",
-
   "phoneTitle": "رقم هاتفك",
   "phoneSubtitle": "سنرسل إليك رمز تحقق في رسالة نصية.",
   "phoneLabel": "رقم الهاتف",
-
   "codeTitle": "أدخل الرمز",
   "codeSentSms": "أرسلنا رمزاً من {length} أرقام إلى {phone}",
-  "@codeSentSms": {"placeholders": {"length": {"type": "int"}, "phone": {"type": "String"}}},
+  "@codeSentSms": {
+    "placeholders": {
+      "length": {
+        "type": "int"
+      },
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "codeSentVoice": "سنتصل بك على {phone} ونقرأ لك الرمز.",
-  "@codeSentVoice": {"placeholders": {"phone": {"type": "String"}}},
+  "@codeSentVoice": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "codeLabel": "رمز التحقق",
   "resendIn": "إعادة الإرسال بعد {seconds, plural, =1{ثانية واحدة} =2{ثانيتين} few{{seconds} ثوانٍ} other{{seconds} ثانية}}",
-  "@resendIn": {"placeholders": {"seconds": {"type": "int"}}},
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "resendByCall": "اتصل بي لقراءة الرمز",
   "devCodeHint": "وضع الاختبار — الرمز: {code}",
-  "@devCodeHint": {"placeholders": {"code": {"type": "String"}}},
+  "@devCodeHint": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "wrongNumber": "تعديل الرقم",
-
   "passwordTitle": "التحقق بخطوتين",
   "passwordSubtitle": "حسابك محمي بكلمة مرور إضافية.",
   "passwordLabel": "كلمة المرور",
   "passwordHint": "التلميح: {hint}",
-  "@passwordHint": {"placeholders": {"hint": {"type": "String"}}},
-
+  "@passwordHint": {
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      }
+    }
+  },
   "signUpTitle": "معلوماتك",
   "signUpSubtitle": "أدخل اسمك ليتعرّف عليك أصدقاؤك.",
   "firstName": "الاسم الأول",
   "lastName": "اسم العائلة (اختياري)",
   "nameRequired": "الاسم مطلوب",
   "acceptTerms": "أوافق على شروط الاستخدام وسياسة الخصوصية",
-
   "chatsTitle": "المحادثات",
   "chatsEmpty": "حسابك جاهز! المحادثات قادمة في التحديث القادم.",
   "settingsTitle": "الإعدادات",
@@ -44,15 +72,116 @@
   "logout": "تسجيل الخروج",
   "logoutConfirm": "هل تريد تسجيل الخروج من هذا الجهاز؟",
   "language": "اللغة",
-
   "errPhoneInvalid": "رقم الهاتف غير صحيح",
   "errCodeInvalid": "الرمز غير صحيح",
   "errCodeExpired": "انتهت صلاحية الرمز، اطلب رمزاً جديداً",
   "errPhoneBanned": "هذا الرقم محظور من استخدام وصلة",
   "errPasswordInvalid": "كلمة المرور غير صحيحة",
   "errRateLimited": "محاولات كثيرة. حاول بعد {seconds, plural, =1{ثانية واحدة} =2{ثانيتين} few{{seconds} ثوانٍ} other{{seconds} ثانية}}",
-  "@errRateLimited": {"placeholders": {"seconds": {"type": "int"}}},
+  "@errRateLimited": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "errNetwork": "لا يوجد اتصال. تحقّق من الإنترنت وحاول مجدداً",
   "errUpdateRequired": "يتوفر إصدار أحدث من وصلة. يرجى التحديث.",
-  "errGeneric": "حدث خطأ ما. حاول مجدداً"
+  "errGeneric": "حدث خطأ ما. حاول مجدداً",
+  "savedMessages": "الرسائل المحفوظة",
+  "deletedAccount": "حساب محذوف",
+  "newChat": "محادثة جديدة",
+  "searchHint": "ابحث باسم المستخدم أو رقم الهاتف",
+  "noResults": "لا توجد نتائج",
+  "notOnWasla": "هذا الرقم غير مسجّل في وصلة",
+  "contactsSection": "جهات الاتصال",
+  "globalSection": "نتائج عامة",
+  "noChatsYet": "لا توجد محادثات بعد. ابدأ محادثة جديدة.",
+  "loadError": "تعذّر تحميل المحادثات",
+  "messageHint": "رسالة",
+  "typing": "يكتب…",
+  "edited": "معدّلة",
+  "forwardedFrom": "معاد توجيهها من {name}",
+  "@forwardedFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "locationMsg": "📍 موقع",
+  "contactMsg": "👤 جهة اتصال",
+  "unsupportedMsg": "هذه الرسالة غير مدعومة، يرجى تحديث التطبيق",
+  "you": "أنت",
+  "yesterday": "أمس",
+  "reply": "رد",
+  "copy": "نسخ",
+  "edit": "تعديل",
+  "forward": "إعادة توجيه",
+  "forwardToSaved": "إلى الرسائل المحفوظة",
+  "chooseChat": "اختر محادثة",
+  "pin": "تثبيت",
+  "unpin": "إلغاء التثبيت",
+  "delete": "حذف",
+  "deleteForMe": "حذف لديّ فقط",
+  "deleteForEveryone": "حذف لدى الجميع",
+  "report": "إبلاغ",
+  "block": "حظر",
+  "unblock": "إلغاء الحظر",
+  "blockConfirm": "حظر {name}؟ لن يتمكن أي منكما من مراسلة الآخر.",
+  "@blockConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "youBlocked": "لقد حظرت هذا المستخدم",
+  "copied": "تم النسخ",
+  "sendFailed": "لم تُرسل — اضغط لإعادة المحاولة",
+  "retry": "إعادة المحاولة",
+  "discard": "حذف",
+  "editing": "تعديل الرسالة",
+  "replyingTo": "الرد على {name}",
+  "@replyingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pinChat": "تثبيت المحادثة",
+  "unpinChat": "إلغاء تثبيت المحادثة",
+  "mute": "كتم الإشعارات",
+  "unmute": "إلغاء الكتم",
+  "archive": "أرشفة",
+  "unarchive": "إلغاء الأرشفة",
+  "archived": "الأرشيف",
+  "clearHistory": "مسح المحادثة",
+  "reportTitle": "الإبلاغ",
+  "reportWhy": "ما المشكلة؟",
+  "reportComment": "تفاصيل إضافية (اختياري)",
+  "reportAlsoBlock": "حظر هذا المستخدم أيضاً",
+  "reportSend": "إرسال البلاغ",
+  "reportSent": "شكراً، وصل بلاغك وسيراجعه فريق الإشراف.",
+  "reasonSpam": "رسائل مزعجة",
+  "reasonScam": "احتيال",
+  "reasonViolence": "عنف",
+  "reasonTerrorism": "إرهاب",
+  "reasonChildAbuse": "إساءة للأطفال",
+  "reasonPornography": "محتوى إباحي",
+  "reasonIllegalGoods": "بضائع ممنوعة",
+  "reasonPersonalData": "نشر بيانات شخصية",
+  "reasonHarassment": "تحرّش أو مضايقة",
+  "reasonFakeAccount": "حساب مزيّف",
+  "reasonCopyright": "حقوق نشر",
+  "reasonOther": "أخرى",
+  "errRateLimitedMinutes": "محاولات كثيرة. حاول بعد {minutes, plural, =1{دقيقة واحدة} =2{دقيقتين} few{{minutes} دقائق} other{{minutes} دقيقة}}",
+  "@errRateLimitedMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }

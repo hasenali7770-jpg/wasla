@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../gen/proto/wasla/v1/auth.pb.dart';
 import '../../gen/proto/wasla/v1/frame.pbenum.dart';
 import '../../gen/proto/wasla/v1/users.pb.dart';
+import '../chat/chat_store.dart';
 import '../net/connection.dart';
 import '../net/rpc_exception.dart';
 import '../providers.dart';
@@ -183,6 +184,7 @@ class AuthController extends Notifier<AuthState> {
   void _onRevoked() => _clearLocal();
 
   Future<void> _clearLocal() async {
+    ref.invalidate(chatStoreProvider);
     await _store.clear();
     _conn.token = '';
     await _conn.close();

@@ -164,4 +164,223 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errGeneric => 'Something went wrong. Try again';
+
+  @override
+  String get savedMessages => 'Saved Messages';
+
+  @override
+  String get deletedAccount => 'Deleted Account';
+
+  @override
+  String get newChat => 'New chat';
+
+  @override
+  String get searchHint => 'Search by @username or phone number';
+
+  @override
+  String get noResults => 'No results';
+
+  @override
+  String get notOnWasla => 'This number isn\'t on Wasla';
+
+  @override
+  String get contactsSection => 'Contacts';
+
+  @override
+  String get globalSection => 'Global results';
+
+  @override
+  String get noChatsYet => 'No chats yet. Start a new chat.';
+
+  @override
+  String get loadError => 'Couldn\'t load chats';
+
+  @override
+  String get messageHint => 'Message';
+
+  @override
+  String get typing => 'typing…';
+
+  @override
+  String get edited => 'edited';
+
+  @override
+  String forwardedFrom(String name) {
+    return 'Forwarded from $name';
+  }
+
+  @override
+  String get locationMsg => '📍 Location';
+
+  @override
+  String get contactMsg => '👤 Contact';
+
+  @override
+  String get unsupportedMsg =>
+      'This message isn\'t supported, please update the app';
+
+  @override
+  String get you => 'You';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get reply => 'Reply';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get forward => 'Forward';
+
+  @override
+  String get forwardToSaved => 'To Saved Messages';
+
+  @override
+  String get chooseChat => 'Choose a chat';
+
+  @override
+  String get pin => 'Pin';
+
+  @override
+  String get unpin => 'Unpin';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get deleteForMe => 'Delete for me';
+
+  @override
+  String get deleteForEveryone => 'Delete for everyone';
+
+  @override
+  String get report => 'Report';
+
+  @override
+  String get block => 'Block';
+
+  @override
+  String get unblock => 'Unblock';
+
+  @override
+  String blockConfirm(String name) {
+    return 'Block $name? Neither of you will be able to message the other.';
+  }
+
+  @override
+  String get youBlocked => 'You blocked this user';
+
+  @override
+  String get copied => 'Copied';
+
+  @override
+  String get sendFailed => 'Not sent — tap to retry';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get discard => 'Delete';
+
+  @override
+  String get editing => 'Editing message';
+
+  @override
+  String replyingTo(String name) {
+    return 'Replying to $name';
+  }
+
+  @override
+  String get pinChat => 'Pin chat';
+
+  @override
+  String get unpinChat => 'Unpin chat';
+
+  @override
+  String get mute => 'Mute';
+
+  @override
+  String get unmute => 'Unmute';
+
+  @override
+  String get archive => 'Archive';
+
+  @override
+  String get unarchive => 'Unarchive';
+
+  @override
+  String get archived => 'Archived';
+
+  @override
+  String get clearHistory => 'Clear history';
+
+  @override
+  String get reportTitle => 'Report';
+
+  @override
+  String get reportWhy => 'What\'s the problem?';
+
+  @override
+  String get reportComment => 'More details (optional)';
+
+  @override
+  String get reportAlsoBlock => 'Also block this user';
+
+  @override
+  String get reportSend => 'Send report';
+
+  @override
+  String get reportSent => 'Thanks — our moderators will review your report.';
+
+  @override
+  String get reasonSpam => 'Spam';
+
+  @override
+  String get reasonScam => 'Scam';
+
+  @override
+  String get reasonViolence => 'Violence';
+
+  @override
+  String get reasonTerrorism => 'Terrorism';
+
+  @override
+  String get reasonChildAbuse => 'Child abuse';
+
+  @override
+  String get reasonPornography => 'Pornography';
+
+  @override
+  String get reasonIllegalGoods => 'Illegal goods';
+
+  @override
+  String get reasonPersonalData => 'Personal data';
+
+  @override
+  String get reasonHarassment => 'Harassment';
+
+  @override
+  String get reasonFakeAccount => 'Fake account';
+
+  @override
+  String get reasonCopyright => 'Copyright';
+
+  @override
+  String get reasonOther => 'Other';
+
+  @override
+  String errRateLimitedMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return 'Too many attempts. Try again in $_temp0';
+  }
 }

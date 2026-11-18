@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wasla/app/app.dart';
 import 'package:wasla/core/auth/auth_api.dart';
 import 'package:wasla/core/auth/session_store.dart';
+import 'package:wasla/core/chat/chat_store.dart';
 import 'package:wasla/core/net/connection.dart';
 import 'package:wasla/core/net/rpc_exception.dart';
 import 'package:wasla/core/providers.dart';
@@ -12,6 +13,8 @@ import 'package:wasla/gen/proto/wasla/v1/auth.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/common.pbenum.dart';
 import 'package:wasla/gen/proto/wasla/v1/frame.pbenum.dart';
 import 'package:wasla/gen/proto/wasla/v1/users.pb.dart';
+
+import 'fakes/fake_chat_api.dart';
 
 /// Scripted AuthService for UI tests.
 class FakeAuthApi implements AuthApi {
@@ -58,6 +61,7 @@ Widget app(FakeAuthApi api, MemorySessionStore store) => ProviderScope(
       overrides: [
         authApiProvider.overrideWithValue(api),
         sessionStoreProvider.overrideWithValue(store),
+        chatApiProvider.overrideWithValue(FakeChatApi()),
         connectionProvider.overrideWithValue(
           WaslaConnection(
             url: Uri.parse('ws://127.0.0.1:1/ws'),
@@ -105,7 +109,9 @@ void main() {
 
     expect(api.calls, contains('signUp:علي'));
     expect(store.token, 'tok');
-    expect(find.textContaining('حسابك جاهز'), findsOneWidget);
+    // Signed in: an empty chat list with the new-chat button.
+    expect(find.text('لا توجد محادثات بعد. ابدأ محادثة جديدة.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox()); // dispose timers
   });
 
   testWidgets('switching to English flips the layout to LTR', (tester) async {

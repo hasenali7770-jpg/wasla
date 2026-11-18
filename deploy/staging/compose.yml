@@ -13,6 +13,8 @@ x-wasla-env: &wasla-env
   WASLA_TRUST_PROXY: "true"
   WASLA_CODE_SECRET: ${CODE_SECRET:?}
   WASLA_PHONE_PEPPER: ${PHONE_PEPPER:?}
+  # Optional: Slack/Mattermost-style webhook for critical-report alerts.
+  WASLA_ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
 
 services:
   postgres:

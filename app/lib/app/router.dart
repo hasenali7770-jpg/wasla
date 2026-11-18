@@ -8,7 +8,9 @@ import '../features/auth/code_screen.dart';
 import '../features/auth/password_screen.dart';
 import '../features/auth/phone_screen.dart';
 import '../features/auth/signup_screen.dart';
+import '../features/chat/chat_screen.dart';
 import '../features/chats/chats_screen.dart';
+import '../features/chats/new_chat_screen.dart';
 import '../features/settings/sessions_screen.dart';
 
 /// The login state decides the screen; the router only follows it.
@@ -42,6 +44,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login/signup', builder: (_, _) => const SignUpScreen()),
       GoRoute(path: '/login/password', builder: (_, _) => const PasswordScreen()),
       GoRoute(path: '/chats', builder: (_, _) => const ChatsScreen()),
+      GoRoute(path: '/new-chat', builder: (_, _) => const NewChatScreen()),
+      GoRoute(path: '/chat/:id', builder: (_, s) => chatRoute(s)),
       GoRoute(path: '/settings/sessions', builder: (_, _) => const SessionsScreen()),
     ],
   );
