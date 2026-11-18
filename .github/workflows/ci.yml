@@ -125,7 +125,10 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - name: Build debug APK
-        run: flutter build apk --debug
+        # Retried: Gradle's plugin download sometimes fails on a network blip.
+        run: |
+          for i in 1 2 3; do flutter build apk --debug && exit 0; echo "attempt $i failed, retrying"; sleep 20; done
+          exit 1
       - uses: actions/upload-artifact@v6
         with:
           name: wasla-debug-apk

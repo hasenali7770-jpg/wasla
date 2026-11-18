@@ -107,7 +107,13 @@ jobs:
           cache: true
       - run: flutter pub get
       - name: Build staging APK
-        run: flutter build apk --debug --dart-define=WASLA_WS_URL=wss://${{ needs.deploy.outputs.domain }}/ws
+        # Retried: Gradle's plugin download sometimes fails on a network blip.
+        run: |
+          for i in 1 2 3; do
+            flutter build apk --debug --dart-define=WASLA_WS_URL=wss://${{ needs.deploy.outputs.domain }}/ws && exit 0
+            echo "attempt $i failed, retrying"; sleep 20
+          done
+          exit 1
       - uses: actions/upload-artifact@v6
         with:
           name: wasla-staging-apk

@@ -19,6 +19,7 @@ Everything that must be true before real users are let in. Owner: the person in 
 - [ ] Monitoring and alerts: `/metrics` + Grafana dashboards, error tracking (Sentry), alerts on send latency, error rate and SMS spend. *(engineer)*
 - [ ] Load test at 2× the expected launch load (20k users → 40k simulated). *(engineer)*
 - [ ] Push notifications working on real Android devices (Firebase project owned by the company account). *(owner + Claude)*
+- [ ] Production gets its own Firebase service-account key (not the staging one); the staging key is revoked if it was ever shared. *(owner)*
 
 ## Moderation and legal
 
