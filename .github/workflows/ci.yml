@@ -124,8 +124,16 @@ jobs:
         run: tool/check_rtl.sh
       - run: flutter analyze
       - run: flutter test
+      - name: Firebase config (push notifications)
+        # From the GOOGLE_SERVICES_JSON secret; without it the APK has no push.
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printf '%s' "$GOOGLE_SERVICES_JSON" | python3 tool/firebase_config.py
       - name: Build debug APK
-        run: flutter build apk --debug
+        # Retried: Gradle's plugin download sometimes fails on a network blip.
+        run: |
+          for i in 1 2 3; do flutter build apk --debug && exit 0; echo "attempt $i failed, retrying"; sleep 20; done
+          exit 1
       - uses: actions/upload-artifact@v6
         with:
           name: wasla-debug-apk
@@ -164,14 +172,20 @@ jobs:
           cache: true
       - name: Migrate
         run: for f in db/postgres/migrations/*.up.sql; do psql -h localhost -U wasla -d wasla -v ON_ERROR_STOP=1 -q -f "$f"; done
+      - name: Start S3 storage (SeaweedFS, as on staging)
+        # A service container cannot take a command, so it is started here.
+        run: |
+          docker run -d --name s3 -p 8333:8333 --entrypoint sh chrislusf/seaweedfs:3.97 -c \
+            'printf "{\"identities\":[{\"name\":\"wasla\",\"credentials\":[{\"accessKey\":\"wasla\",\"secretKey\":\"ci-only\"}],\"actions\":[\"Admin\",\"Read\",\"Write\",\"List\",\"Tagging\"]}]}" > /tmp/s3.json && weed server -dir=/data -s3 -s3.port=8333 -s3.config=/tmp/s3.json -master.volumeSizeLimitMB=1024'
       - name: Start server (dev mode)
         working-directory: backend
         run: |
           go build -o /tmp/wasla-server ./cmd/wasla-server
           WASLA_ENV=dev WASLA_POSTGRES_URL="postgres://wasla:ci@localhost:5432/wasla?sslmode=disable" \
           WASLA_REDIS_URL=redis://localhost:6379/0 WASLA_HTTP_ADDR=127.0.0.1:8080 \
+          WASLA_S3_ENDPOINT=127.0.0.1:8333 WASLA_S3_ACCESS_KEY=wasla WASLA_S3_SECRET_KEY=ci-only \
             nohup /tmp/wasla-server > /tmp/server.log 2>&1 &
-          for i in $(seq 1 30); do curl -sf localhost:8080/readyz && exit 0; sleep 1; done
+          for i in $(seq 1 90); do curl -sf localhost:8080/readyz && exit 0; sleep 1; done
           cat /tmp/server.log; exit 1
       - name: Dart client against server
         working-directory: app

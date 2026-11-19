@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher name. Arabic by default; English phones use values-en. -->
+    <string name="app_name">وصلة</string>
+    <!-- Push notifications. The server sends only these keys, never the
+         message text, so Google never sees what people write. -->
+    <string name="push_title">وصلة</string>
+    <string name="push_new_message">لديك رسالة جديدة</string>
+    <string name="channel_messages">الرسائل</string>
+</resources>

@@ -16,6 +16,7 @@ A cloud messaging app for Android, iOS, web and desktop. Arabic (RTL) is the def
 | 5 | [Moderation and legal requests](docs/05-moderation.md) | Report flow, deadlines, roles, admin panel, authority requests |
 | — | [Onboarding (engineers)](docs/onboarding.md) | Read order, local setup, conventions, servers, known gaps |
 | — | [Staging setup (owner)](docs/staging-setup.md) | Create the test server and install the APK on your phone |
+| — | [Launch checklist](docs/launch-checklist.md) | Everything that must be done before real users join |
 
 ## Repository layout
 

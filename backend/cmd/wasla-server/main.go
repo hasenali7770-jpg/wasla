@@ -25,12 +25,14 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"wasla/backend/internal/auth"
+	"wasla/backend/internal/media"
 	"wasla/backend/internal/moderation"
 	"wasla/backend/internal/platform/config"
 	"wasla/backend/internal/platform/db"
 	"wasla/backend/internal/platform/migrate"
 	"wasla/backend/internal/platform/password"
 	"wasla/backend/internal/platform/snowflake"
+	"wasla/backend/internal/push"
 	"wasla/backend/internal/server"
 )
 
@@ -98,7 +100,47 @@ func run(log *slog.Logger, args []string) error {
 	authCfg.CodeSecret, authCfg.PhonePepper = cfg.CodeSecret, cfg.PhonePepper
 	authCfg.ExposeDevCode = cfg.Env == "dev"
 
+	var store *media.Storage
+	if cfg.S3Endpoint != "" {
+		// Storage may start after us (containers, restarts): retry for a minute.
+		for attempt := 1; ; attempt++ {
+			store, err = media.NewStorage(ctx, media.StorageConfig{Endpoint: cfg.S3Endpoint, Secure: cfg.S3Secure,
+				PublicURL: cfg.S3PublicURL, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, Bucket: cfg.S3Bucket, Region: cfg.S3Region})
+			if err == nil {
+				break
+			}
+			if attempt == 30 {
+				return err
+			}
+			log.Warn("storage not ready, retrying", "attempt", attempt, "err", err)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(2 * time.Second):
+			}
+		}
+	} else {
+		log.Warn("WASLA_S3_ENDPOINT not set: photos and files are disabled")
+	}
+	var pushSender push.Sender
+	switch {
+	case cfg.FCMCredentialsFile != "":
+		fcm, err := push.NewFCMFromFile(cfg.FCMCredentialsFile)
+		if err != nil {
+			return err
+		}
+		log.Info("push notifications on", "firebase_project", fcm.ProjectID())
+		pushSender = fcm
+	case cfg.Env == "dev":
+		pushSender = push.LogSender{Log: log}
+	default:
+		log.Warn("WASLA_FCM_CREDENTIALS_FILE not set: push notifications are disabled")
+	}
+	mediaCfg := media.DefaultConfig()
+	mediaCfg.MaxUploadBytes = cfg.MaxUploadBytes
+
 	srv, err := server.New(ctx, server.Deps{
+		Storage: store, MediaCfg: mediaCfg, Push: pushSender,
 		DB: pool, Redis: rdb, Log: log, IDs: ids, SMS: sms, Attestor: attestor, AuthCfg: authCfg,
 		SLA: moderation.DefaultSLA, MinAppVersion: cfg.MinAppVersion, TrustProxy: cfg.TrustProxy,
 		OriginPatterns: cfg.OriginPatterns, SecureCookies: cfg.Env != "dev", AlertWebhookURL: cfg.AlertWebhookURL,
@@ -107,6 +149,7 @@ func run(log *slog.Logger, args []string) error {
 		return err
 	}
 	defer srv.Hub.Close()
+	defer srv.Push.Close()
 	adminHandler, err := srv.AdminHandler()
 	if err != nil {
 		return err

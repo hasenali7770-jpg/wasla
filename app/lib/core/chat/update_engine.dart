@@ -21,8 +21,12 @@ class UpdateEngine {
     required this.api,
     required this.apply,
     required this.onTooLong,
+    this.onPts,
     this.gapWait = const Duration(milliseconds: 500),
   });
+
+  /// Called whenever the local pts moves (persist it).
+  final void Function(Int64 pts)? onPts;
 
   final ChatApi api;
   final void Function(Update u) apply;
@@ -41,8 +45,13 @@ class UpdateEngine {
 
   /// Sets the starting point (from ListDialogs) and drops anything older.
   void reset(Int64 pts) {
-    _pts = pts;
+    _setPts(pts);
     _buffer.removeWhere((k, _) => k <= pts);
+  }
+
+  void _setPts(Int64 pts) {
+    _pts = pts;
+    onPts?.call(pts);
   }
 
   void onPush(UpdatesPush push) {
@@ -71,7 +80,7 @@ class UpdateEngine {
 
   void _apply(Update u) {
     apply(u);
-    _pts = u.pts;
+    _setPts(u.pts);
   }
 
   void _drain() {
@@ -106,7 +115,7 @@ class UpdateEngine {
       for (final u in d.updates) {
         if (u.pts > _pts) _apply(u);
       }
-      if (d.pts > _pts) _pts = d.pts;
+      if (d.pts > _pts) _setPts(d.pts);
       _drain();
       if (!d.hasMore) return;
     }

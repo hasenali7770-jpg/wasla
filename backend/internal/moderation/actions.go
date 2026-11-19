@@ -60,6 +60,9 @@ type Actions struct {
 	PhonePepper []byte
 	Log         *slog.Logger
 	Now         func() time.Time
+	// OnMediaBlocked (optional) removes files already shared with a newly
+	// blocklisted hash (media.Service.TakedownByHash).
+	OnMediaBlocked func(ctx context.Context, sha256 []byte, reason pb.ReportReason) error
 }
 
 // MaxModeratorBan is the longest ban a (non-senior) moderator may issue.
@@ -286,13 +289,18 @@ func (a *Actions) BlockMedia(ctx context.Context, st Staff, sha256 []byte, reaso
 	if st.Role < RoleSeniorModerator {
 		return errs.Denied("only senior moderators can edit the media blocklist")
 	}
-	return db.InTx(ctx, a.DB, func(tx pgx.Tx) error {
+	err := db.InTx(ctx, a.DB, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `INSERT INTO media_blocklist (sha256, reason, note, added_by) VALUES ($1,$2,$3,$4)
 			ON CONFLICT (sha256) DO NOTHING`, sha256, int16(reason), note, st.ID); err != nil {
 			return err
 		}
 		return a.audit(ctx, tx, st, ActionBlockMedia, 0, 0, nil, fmt.Sprintf("media blocklisted (%s): %s", reason, note), nil, Link{})
 	})
+	if err != nil || a.OnMediaBlocked == nil {
+		return err
+	}
+	// Copies already shared are taken down too.
+	return a.OnMediaBlocked(ctx, sha256, reason)
 }
 
 func chatMembers(ctx context.Context, tx pgx.Tx, chatID int64) ([]int64, error) {

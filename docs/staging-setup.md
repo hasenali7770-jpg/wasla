@@ -108,7 +108,9 @@ From now on this repeats **automatically** after every merge into `main`.
 
 ---
 
-## Optional: moderator alerts on your phone
+## Later: moderator alerts on your phone
+
+*Postponed until moderators are hired (see [launch-checklist.md](launch-checklist.md)).*
 
 When someone reports child abuse or terrorism, Wasla can post an alert to a chat channel:
 

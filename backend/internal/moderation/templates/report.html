@@ -9,7 +9,7 @@
     <dt>الحالة</dt><dd>{{status .R.Status}}{{if .R.Resolution}} — {{.R.Resolution}}{{end}}</dd>
     <dt>وصل في</dt><dd>{{ts .R.CreatedAt}}</dd>
     <dt>المهلة</dt><dd class="{{if overdue .R.DueAt}}overdue-text{{end}}">{{ts .R.DueAt}}</dd>
-    <dt>المُبلِّغ</dt><dd><a href="/admin/users/{{.R.ReporterID}}">{{.R.ReporterID}}</a></dd>
+    <dt>المُبلِّغ</dt><dd>{{if .R.ReporterID}}<a href="/admin/users/{{.R.ReporterID}}">{{.R.ReporterID}}</a>{{else}}<span class="badge p1">تلقائي</span> (فحص النظام){{end}}</dd>
     <dt>المُبلَّغ عنه</dt><dd>{{if .R.TargetUserID}}<a href="/admin/users/{{deref .R.TargetUserID}}">{{.R.TargetName}} ({{deref .R.TargetUserID}})</a>{{else}}—{{end}}</dd>
     {{with .Prior}}<dt>سجلّه</dt><dd>{{.Reports}} بلاغات أخرى · {{.Actions}} إجراءات سابقة</dd>{{end}}
     <dt>تعليق المُبلِّغ</dt><dd>{{if .R.Comment}}<bdi>{{.R.Comment}}</bdi>{{else}}—{{end}}</dd>

@@ -9,6 +9,7 @@ import 'package:wasla/core/chat/chat_store.dart';
 import 'package:wasla/core/net/connection.dart';
 import 'package:wasla/core/net/rpc_exception.dart';
 import 'package:wasla/core/providers.dart';
+import 'package:wasla/core/storage/local_store.dart';
 import 'package:wasla/gen/proto/wasla/v1/auth.pb.dart';
 import 'package:wasla/gen/proto/wasla/v1/common.pbenum.dart';
 import 'package:wasla/gen/proto/wasla/v1/frame.pbenum.dart';
@@ -19,6 +20,10 @@ import 'fakes/fake_chat_api.dart';
 /// Scripted AuthService for UI tests.
 class FakeAuthApi implements AuthApi {
   final calls = <String>[];
+  final pushTokens = <String>[];
+
+  @override
+  Future<void> registerPushToken(String token) async => pushTokens.add(token);
   String? lastPhone;
 
   @override
@@ -61,6 +66,7 @@ Widget app(FakeAuthApi api, MemorySessionStore store) => ProviderScope(
       overrides: [
         authApiProvider.overrideWithValue(api),
         sessionStoreProvider.overrideWithValue(store),
+        localStoreProvider.overrideWithValue(Future.value(MemoryStore())),
         chatApiProvider.overrideWithValue(FakeChatApi()),
         connectionProvider.overrideWithValue(
           WaslaConnection(

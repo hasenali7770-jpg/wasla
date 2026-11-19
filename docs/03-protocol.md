@@ -70,18 +70,27 @@ Outbox states are `pending → sending → sent | failed(permanent)`. Network er
 
 ## 7. Media transfer
 
-1. Compress on the device (defaults below). Then call `CreateUpload`, which returns `part_size` (512 KiB on mobile) and the first presigned part URLs.
-2. Upload parts with `PUT`, 3 in parallel. Persist each part's ETag locally.
-3. To resume after a restart, call `GetUploadPartUrls`. It returns the parts already stored plus fresh URLs for the missing ones.
-4. Call `CompleteUpload`, then `SendMessage` with the `media_id`. Videos can be sent while the server is still transcoding (status `PROCESSING`); recipients see the thumbhash placeholder until a rendition is ready.
+1. Compress on the device (defaults below). Then call `CreateUpload`. Files up to 5 MiB are one part. Larger files are split into parts of at least 5 MiB (the S3 minimum), at most 10,000 parts. The response carries `part_size_bytes`, `part_count` and the first presigned part URLs; `GetUploadPartUrls` returns the rest (up to 100 per call).
+2. Upload parts with `PUT` straight to storage, 3 in parallel; the server never handles the bytes. Each part is retried 5 times with backoff.
+3. To resume after a restart, call `GetUploadPartUrls`. It returns the parts already stored plus fresh URLs for the missing ones. *App status (Sprint 3):* the app keeps the prepared file and restarts an interrupted upload from the first part; part-level resume in the app is planned with video.
+4. Call `CompleteUpload`, then `SendMessage` with the `media_id`. On `CompleteUpload` the server checks the file's SHA-256 against the moderation blocklist (files up to 20 MB before answering, larger ones in the background) and makes photo thumbnails `thumb_s` (90 px) and `thumb_m` (320 px). Videos can be sent while the server is still transcoding (status `PROCESSING`); recipients see the thumbhash placeholder until a rendition is ready.
+5. Downloads: `GetDownloadUrl` with the context the file is seen in (a message, a user's profile photo, or a chat photo); the server checks access there. `variant` is `thumb_s`, `thumb_m` or empty for the original. URLs live 1 hour. Some S3 services (SeaweedFS on staging) ignore the requested download file name, so the app always names saved files from `Media.file_name`.
 
 Default compression:
 
 | Type | Default |
 |---|---|
-| Photo | Long side 1280 px, JPEG quality 80 (WebP later) |
+| Photo | Long side 1280 px, JPEG quality 80 (WebP later). Re-encoding also removes EXIF data such as GPS location. |
 | Video | 720p H.264, about 1.5 Mbps; "Send as file" sends the original |
 | Voice | Opus at 32 kbps in an OGG container |
+
+## 7a. Push notifications
+
+- After sign-in the app calls `AuthService.RegisterPushToken` (provider FCM) with its Firebase token, and again whenever Firebase issues a new one. A token belongs to one session; logging in elsewhere with the same phone moves it.
+- **When:** the server pushes only when a new message from someone else reached **no connected device** of the user (`PUBLISH` to the user's Redis channel was received by 0 gateways), and the chat is not muted. While a device is connected, updates arrive over the WebSocket instead.
+- **App in the background:** the app disconnects 15 s after going to the background and reconnects (then catches up with `GetDifference`) when it returns. Without that, a hidden app would keep its connection and get no notifications.
+- **Content:** the push carries only `{type: "new_message", chat_id}`. The visible text comes from the app's own resources (`push_title`, `push_new_message`, in the phone's language), so message text and sender names never pass through Google. Pushes for the same chat replace each other (`tag = chat_<id>`).
+- Tokens that FCM reports as unregistered are removed. Servers without `WASLA_FCM_CREDENTIALS_FILE` don't send pushes (dev servers log them).
 
 ## 8. Versioning rules
 

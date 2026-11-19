@@ -383,4 +383,58 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'Too many attempts. Try again in $_temp0';
   }
+
+  @override
+  String get photoMsg => '📷 Photo';
+
+  @override
+  String fileMsg(String name) {
+    return '📎 $name';
+  }
+
+  @override
+  String get attach => 'Attach';
+
+  @override
+  String get attachGallery => 'Photo from gallery';
+
+  @override
+  String get attachCamera => 'Take a photo';
+
+  @override
+  String get attachFile => 'File';
+
+  @override
+  String get captionHint => 'Add a caption…';
+
+  @override
+  String get sendPhoto => 'Send photo';
+
+  @override
+  String get sendFile => 'Send file';
+
+  @override
+  String get myPhoto => 'My profile photo';
+
+  @override
+  String get photoUpdated => 'Your photo was updated';
+
+  @override
+  String get openFailed => 'No app on your phone can open this file';
+
+  @override
+  String sizeKb(String n) {
+    return '$n KB';
+  }
+
+  @override
+  String sizeMb(String n) {
+    return '$n MB';
+  }
+
+  @override
+  String get mediaUnavailable => 'This photo is no longer available';
+
+  @override
+  String get photoTooBig => 'The file is too large';
 }

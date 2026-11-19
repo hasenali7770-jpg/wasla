@@ -385,4 +385,58 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return 'محاولات كثيرة. حاول بعد $_temp0';
   }
+
+  @override
+  String get photoMsg => '📷 صورة';
+
+  @override
+  String fileMsg(String name) {
+    return '📎 $name';
+  }
+
+  @override
+  String get attach => 'إرفاق';
+
+  @override
+  String get attachGallery => 'صورة من المعرض';
+
+  @override
+  String get attachCamera => 'التقاط صورة';
+
+  @override
+  String get attachFile => 'ملف';
+
+  @override
+  String get captionHint => 'أضف تعليقاً…';
+
+  @override
+  String get sendPhoto => 'إرسال الصورة';
+
+  @override
+  String get sendFile => 'إرسال الملف';
+
+  @override
+  String get myPhoto => 'صورتي الشخصية';
+
+  @override
+  String get photoUpdated => 'تم تحديث صورتك';
+
+  @override
+  String get openFailed => 'لا يوجد تطبيق على هاتفك لفتح هذا الملف';
+
+  @override
+  String sizeKb(String n) {
+    return '$n ك.ب';
+  }
+
+  @override
+  String sizeMb(String n) {
+    return '$n م.ب';
+  }
+
+  @override
+  String get mediaUnavailable => 'لم تعد هذه الصورة متاحة';
+
+  @override
+  String get photoTooBig => 'الملف كبير جداً';
 }

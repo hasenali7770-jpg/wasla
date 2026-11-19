@@ -14,10 +14,12 @@ import (
 	"wasla/backend/internal/chats"
 	"wasla/backend/internal/contacts"
 	"wasla/backend/internal/gateway"
+	"wasla/backend/internal/media"
 	"wasla/backend/internal/messaging"
 	"wasla/backend/internal/moderation"
 	"wasla/backend/internal/platform/ratelimit"
 	"wasla/backend/internal/platform/rpc"
+	"wasla/backend/internal/push"
 	"wasla/backend/internal/updates"
 	"wasla/backend/internal/users"
 )
@@ -34,6 +36,11 @@ type Deps struct {
 	SLA      moderation.SLA
 	// AlertWebhookURL (optional) receives critical-report alerts.
 	AlertWebhookURL string
+	// Push (optional) sends notifications to users with no connected device.
+	Push push.Sender
+	// Storage (optional) enables photos and files.
+	Storage  *media.Storage
+	MediaCfg media.Config
 	// Gateway options
 	MinAppVersion  string
 	TrustProxy     bool
@@ -52,6 +59,8 @@ type Server struct {
 	Actions *moderation.Actions
 	Admin   *moderation.Admin
 	Reports *moderation.Reports
+	Media   *media.Service
+	Push    *push.Notifier
 	deps    Deps
 }
 
@@ -72,6 +81,11 @@ func NewRouter(mods ...Registrar) (*rpc.Router, error) {
 func New(ctx context.Context, d Deps) (*Server, error) {
 	limits := &ratelimit.Limiter{R: d.Redis, Now: d.Now}
 	upd := &updates.Service{DB: d.DB, Redis: d.Redis, Now: d.Now}
+	var notifier *push.Notifier
+	if d.Push != nil {
+		notifier = &push.Notifier{DB: d.DB, Sender: d.Push, Log: d.Log}
+		upd.Offline = notifier.Offline
+	}
 	authSvc := &auth.Service{DB: d.DB, Redis: d.Redis, IDs: d.IDs, SMS: d.SMS, Attestor: d.Attestor,
 		Limits: limits, Cfg: d.AuthCfg, Log: d.Log, Now: d.Now}
 	usersSvc := &users.Service{DB: d.DB}
@@ -83,8 +97,17 @@ func New(ctx context.Context, d Deps) (*Server, error) {
 	chatsSvc := &chats.Service{DB: d.DB, IDs: d.IDs, Updates: upd, Log: d.Log}
 	msgSvc := &messaging.Service{DB: d.DB, IDs: d.IDs, Updates: upd, Limits: limits, Log: d.Log, Now: d.Now}
 	contactsSvc := &contacts.Service{DB: d.DB, Limits: limits}
+	mediaCfg := d.MediaCfg
+	if mediaCfg.MaxUploadBytes == 0 {
+		mediaCfg = media.DefaultConfig()
+	}
+	mediaSvc := &media.Service{DB: d.DB, Store: d.Storage, IDs: d.IDs, Updates: upd, Limits: limits, Cfg: mediaCfg, Log: d.Log}
+	if reports.Alert != nil {
+		mediaSvc.Alert = reports.Alert
+	}
+	actions.OnMediaBlocked = mediaSvc.TakedownByHash
 
-	router, err := NewRouter(authSvc, usersSvc, upd, reports, chatsSvc, msgSvc, contactsSvc)
+	router, err := NewRouter(authSvc, usersSvc, upd, reports, chatsSvc, msgSvc, contactsSvc, mediaSvc)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +120,7 @@ func New(ctx context.Context, d Deps) (*Server, error) {
 	admin := &moderation.Admin{DB: d.DB, Redis: d.Redis, Actions: actions, Limits: limits, Log: d.Log,
 		Now: d.Now, SecureCookie: d.SecureCookies}
 	return &Server{Router: router, Gateway: gw, Hub: hub, Auth: authSvc, Updates: upd, Actions: actions, Admin: admin,
-		Reports: reports, deps: d}, nil
+		Reports: reports, Media: mediaSvc, Push: notifier, deps: d}, nil
 }
 
 // PublicHandler serves the client-facing endpoints.

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_controller.dart';
+import 'theme.dart';
 import '../core/providers.dart';
 import '../features/auth/code_screen.dart';
 import '../features/auth/password_screen.dart';
@@ -54,5 +55,5 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _Splash extends StatelessWidget {
   const _Splash();
   @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) => const Scaffold(body: Center(child: BrandMark(size: 112)));
 }

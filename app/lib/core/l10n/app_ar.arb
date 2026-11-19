@@ -183,5 +183,42 @@
         "type": "int"
       }
     }
-  }
+  },
+  "photoMsg": "📷 صورة",
+  "fileMsg": "📎 {name}",
+  "@fileMsg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "attach": "إرفاق",
+  "attachGallery": "صورة من المعرض",
+  "attachCamera": "التقاط صورة",
+  "attachFile": "ملف",
+  "captionHint": "أضف تعليقاً…",
+  "sendPhoto": "إرسال الصورة",
+  "sendFile": "إرسال الملف",
+  "myPhoto": "صورتي الشخصية",
+  "photoUpdated": "تم تحديث صورتك",
+  "openFailed": "لا يوجد تطبيق على هاتفك لفتح هذا الملف",
+  "sizeKb": "{n} ك.ب",
+  "@sizeKb": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeMb": "{n} م.ب",
+  "@sizeMb": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "mediaUnavailable": "لم تعد هذه الصورة متاحة",
+  "photoTooBig": "الملف كبير جداً"
 }

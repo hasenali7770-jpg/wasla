@@ -7,11 +7,14 @@ import 'package:go_router/go_router.dart';
 import '../../core/chat/chat_store.dart';
 import '../../core/chat/format.dart';
 import '../../core/l10n/app_localizations.dart';
+import '../../core/media/picker.dart';
+import '../../core/storage/local_store.dart';
 import '../../core/net/rpc_exception.dart';
 import '../../gen/proto/wasla/v1/chats.pb.dart';
 import '../../gen/proto/wasla/v1/messages.pb.dart';
 import '../report/report_sheet.dart';
 import 'avatar.dart';
+import 'media_view.dart';
 import 'message_bubble.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -72,6 +75,89 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// Max file size the server accepts (backend media.Config.MaxUploadBytes).
+  static const _maxFileBytes = 500 * 1024 * 1024;
+
+  Future<void> _attach() async {
+    final l = AppLocalizations.of(context);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          _item(c, 'gallery', Icons.photo_outlined, l.attachGallery),
+          _item(c, 'camera', Icons.photo_camera_outlined, l.attachCamera),
+          _item(c, 'file', Icons.insert_drive_file_outlined, l.attachFile),
+        ]),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    final picker = ref.read(mediaPickerProvider);
+    OutMedia? media;
+    try {
+      media = choice == 'file' ? await picker.file() : await picker.photo(camera: choice == 'camera');
+    } catch (e) {
+      _snack(e);
+      return;
+    }
+    if (media == null || !mounted) return;
+    if (media.size > _maxFileBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.photoTooBig)));
+      return;
+    }
+    final caption = await _confirmMedia(media);
+    if (caption == null) return;
+    _store.sendMedia(widget.chatId, media, caption: caption, replyTo: _replyTo?.seq);
+    setState(() => _replyTo = null);
+  }
+
+  /// Preview with a caption field; returns the caption, or null if cancelled.
+  Future<String?> _confirmMedia(OutMedia media) {
+    final l = AppLocalizations.of(context);
+    final caption = TextEditingController(text: _input.text);
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (c) => Padding(
+        padding: EdgeInsetsDirectional.only(bottom: MediaQuery.viewInsetsOf(c).bottom),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsetsDirectional.all(16),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (media.isPhoto && media.bytes != null)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 280),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(media.bytes!)),
+                )
+              else
+                DocumentTile.outgoing(media, 0, true, Theme.of(c).colorScheme.onSurface),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('caption'),
+                controller: caption,
+                maxLength: 1024,
+                minLines: 1,
+                maxLines: 4,
+                decoration: InputDecoration(hintText: l.captionHint),
+              ),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: FilledButton.icon(
+                  key: const Key('send-media'),
+                  icon: const Icon(Icons.send),
+                  label: Text(media.isPhoto ? l.sendPhoto : l.sendFile),
+                  onPressed: () => Navigator.pop(c, caption.text),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    ).then((v) {
+      if (v != null && v == _input.text) _input.clear();
+      return v;
+    });
+  }
+
   void _send() {
     final text = _input.text;
     if (text.trim().isEmpty) return;
@@ -91,7 +177,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _messageMenu(ChatEntry e, Message m) async {
     final l = AppLocalizations.of(context);
     final mine = m.senderId == _store.myId;
-    final canEdit = mine && m.content.hasText() &&
+    final editable = m.content.hasText() || m.content.hasPhoto() || m.content.hasDocument();
+    final canEdit = mine && editable &&
         DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(m.date.toInt() * 1000)).inHours < 48;
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -115,13 +202,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _editing = null;
         });
       case 'copy':
-        await Clipboard.setData(ClipboardData(text: preview(m, l)));
+        await Clipboard.setData(ClipboardData(text: bodyText(m).isEmpty ? preview(m, l) : bodyText(m)));
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.copied)));
       case 'edit':
         setState(() {
           _editing = m;
           _replyTo = null;
-          _input.text = m.content.text.text.text;
+          _input.text = bodyText(m);
         });
       case 'forward':
         await _forward(m);
@@ -161,7 +248,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           for (final d in targets)
             ListTile(
-              leading: Avatar(name: chatTitle(d, _store, l), radius: 18),
+              leading: Avatar(name: chatTitle(d, _store, l), radius: 18, user: _store.users[d.chat.peerUserId]),
               title: Text(chatTitle(d, _store, l)),
               onTap: () => Navigator.pop(c, d.chat.id),
             ),
@@ -236,7 +323,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         title: Row(children: [
-          Avatar(name: title, saved: e.chat.type == ChatType.CHAT_TYPE_SAVED, radius: 18),
+          Avatar(name: title, saved: e.chat.type == ChatType.CHAT_TYPE_SAVED, radius: 18, user: peer),
           const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -268,9 +355,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             itemBuilder: (_, i) {
               if (i < outbox.length) {
                 final o = outbox[i];
+                final om = o.media;
+                final failed = o.status == OutStatus.failed;
                 return MessageBubble(
                   key: ValueKey('out-${o.randomId}'),
                   text: o.text,
+                  media: om == null
+                      ? null
+                      : (fg) => om.isPhoto
+                          ? OutgoingPhoto(media: om, progress: o.progress, failed: failed)
+                          : DocumentTile.outgoing(om, o.progress, failed, fg),
                   mine: true,
                   time: timeLabel(Int64(o.createdAt.millisecondsSinceEpoch ~/ 1000), l, timeOnly: true),
                   tick: o.status == OutStatus.failed ? Tick.failed : Tick.pending,
@@ -328,6 +422,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 8, 8),
           child: Row(children: [
+            if (_editing == null)
+              IconButton(
+                key: const Key('attach'),
+                tooltip: l.attach,
+                icon: const Icon(Icons.attach_file),
+                onPressed: _attach,
+              ),
             Expanded(
               child: TextField(
                 key: const Key('composer'),

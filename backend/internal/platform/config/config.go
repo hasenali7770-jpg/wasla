@@ -25,8 +25,13 @@ type Config struct {
 	NodeID      int64
 	PostgresURL string
 	RedisURL    string
-	S3Endpoint  string
+	S3Endpoint  string // host:port the server uses; empty disables file sharing
 	S3Bucket    string
+	S3Secure    bool
+	S3PublicURL string // scheme://host phones use in signed URLs (default: same as endpoint)
+	S3Region    string
+	S3AccessKey string
+	S3SecretKey string
 	// MaxUploadBytes caps media uploads (Lean MVP: 500 MB; protocol max 2 GiB).
 	MaxUploadBytes int64
 	// SmallGroupLimit is the member cap for fan-out-on-write groups.
@@ -35,7 +40,10 @@ type Config struct {
 	TrustProxy      bool
 	// AlertWebhookURL receives critical-report alerts (Slack/Mattermost format).
 	AlertWebhookURL string
-	OriginPatterns  []string
+	// FCMCredentialsFile is the Firebase service-account key; empty
+	// disables push notifications (dev servers only log them).
+	FCMCredentialsFile string
+	OriginPatterns     []string
 
 	// Secrets (hex-encoded, at least 32 bytes each in prod).
 	CodeSecret  []byte
@@ -45,19 +53,25 @@ type Config struct {
 // Load reads the configuration from the environment.
 func Load() (Config, error) {
 	c := Config{
-		Env:             env("WASLA_ENV", "prod"),
-		Role:            env("WASLA_ROLE", "all"),
-		HTTPAddr:        env("WASLA_HTTP_ADDR", ":8080"),
-		AdminAddr:       env("WASLA_ADMIN_ADDR", "127.0.0.1:8081"),
-		PostgresURL:     os.Getenv("WASLA_POSTGRES_URL"),
-		RedisURL:        env("WASLA_REDIS_URL", "redis://localhost:6379/0"),
-		S3Endpoint:      os.Getenv("WASLA_S3_ENDPOINT"),
-		S3Bucket:        env("WASLA_S3_BUCKET", "wasla-media"),
-		MaxUploadBytes:  500 << 20,
-		SmallGroupLimit: 200,
-		MinAppVersion:   env("WASLA_MIN_APP_VERSION", "0.1.0"),
-		TrustProxy:      os.Getenv("WASLA_TRUST_PROXY") == "true",
-		AlertWebhookURL: os.Getenv("WASLA_ALERT_WEBHOOK_URL"),
+		Env:                env("WASLA_ENV", "prod"),
+		Role:               env("WASLA_ROLE", "all"),
+		HTTPAddr:           env("WASLA_HTTP_ADDR", ":8080"),
+		AdminAddr:          env("WASLA_ADMIN_ADDR", "127.0.0.1:8081"),
+		PostgresURL:        os.Getenv("WASLA_POSTGRES_URL"),
+		RedisURL:           env("WASLA_REDIS_URL", "redis://localhost:6379/0"),
+		S3Endpoint:         os.Getenv("WASLA_S3_ENDPOINT"),
+		S3Bucket:           env("WASLA_S3_BUCKET", "wasla-media"),
+		S3Secure:           os.Getenv("WASLA_S3_SECURE") == "true",
+		S3PublicURL:        os.Getenv("WASLA_S3_PUBLIC_URL"),
+		S3Region:           env("WASLA_S3_REGION", "us-east-1"),
+		S3AccessKey:        os.Getenv("WASLA_S3_ACCESS_KEY"),
+		S3SecretKey:        os.Getenv("WASLA_S3_SECRET_KEY"),
+		MaxUploadBytes:     500 << 20,
+		SmallGroupLimit:    200,
+		MinAppVersion:      env("WASLA_MIN_APP_VERSION", "0.1.0"),
+		TrustProxy:         os.Getenv("WASLA_TRUST_PROXY") == "true",
+		AlertWebhookURL:    os.Getenv("WASLA_ALERT_WEBHOOK_URL"),
+		FCMCredentialsFile: os.Getenv("WASLA_FCM_CREDENTIALS_FILE"),
 	}
 	if v := os.Getenv("WASLA_ORIGIN_PATTERNS"); v != "" {
 		c.OriginPatterns = strings.Split(v, ",")
