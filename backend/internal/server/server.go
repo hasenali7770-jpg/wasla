@@ -14,6 +14,7 @@ import (
 	"wasla/backend/internal/chats"
 	"wasla/backend/internal/contacts"
 	"wasla/backend/internal/gateway"
+	"wasla/backend/internal/media"
 	"wasla/backend/internal/messaging"
 	"wasla/backend/internal/moderation"
 	"wasla/backend/internal/platform/ratelimit"
@@ -34,6 +35,9 @@ type Deps struct {
 	SLA      moderation.SLA
 	// AlertWebhookURL (optional) receives critical-report alerts.
 	AlertWebhookURL string
+	// Storage (optional) enables photos and files.
+	Storage  *media.Storage
+	MediaCfg media.Config
 	// Gateway options
 	MinAppVersion  string
 	TrustProxy     bool
@@ -52,6 +56,7 @@ type Server struct {
 	Actions *moderation.Actions
 	Admin   *moderation.Admin
 	Reports *moderation.Reports
+	Media   *media.Service
 	deps    Deps
 }
 
@@ -83,8 +88,17 @@ func New(ctx context.Context, d Deps) (*Server, error) {
 	chatsSvc := &chats.Service{DB: d.DB, IDs: d.IDs, Updates: upd, Log: d.Log}
 	msgSvc := &messaging.Service{DB: d.DB, IDs: d.IDs, Updates: upd, Limits: limits, Log: d.Log, Now: d.Now}
 	contactsSvc := &contacts.Service{DB: d.DB, Limits: limits}
+	mediaCfg := d.MediaCfg
+	if mediaCfg.MaxUploadBytes == 0 {
+		mediaCfg = media.DefaultConfig()
+	}
+	mediaSvc := &media.Service{DB: d.DB, Store: d.Storage, IDs: d.IDs, Updates: upd, Limits: limits, Cfg: mediaCfg, Log: d.Log}
+	if reports.Alert != nil {
+		mediaSvc.Alert = reports.Alert
+	}
+	actions.OnMediaBlocked = mediaSvc.TakedownByHash
 
-	router, err := NewRouter(authSvc, usersSvc, upd, reports, chatsSvc, msgSvc, contactsSvc)
+	router, err := NewRouter(authSvc, usersSvc, upd, reports, chatsSvc, msgSvc, contactsSvc, mediaSvc)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +111,7 @@ func New(ctx context.Context, d Deps) (*Server, error) {
 	admin := &moderation.Admin{DB: d.DB, Redis: d.Redis, Actions: actions, Limits: limits, Log: d.Log,
 		Now: d.Now, SecureCookie: d.SecureCookies}
 	return &Server{Router: router, Gateway: gw, Hub: hub, Auth: authSvc, Updates: upd, Actions: actions, Admin: admin,
-		Reports: reports, deps: d}, nil
+		Reports: reports, Media: mediaSvc, deps: d}, nil
 }
 
 // PublicHandler serves the client-facing endpoints.

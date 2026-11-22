@@ -42,5 +42,10 @@ Each entry gives the decision, the reason, and the alternative that was rejected
 **Why:** no storage cluster to operate; R2 removes egress fees. MinIO's community edition is in maintenance mode, has stopped publishing new images, and is AGPL.
 **Revisit if:** the CMC requires hosting in Iraq. Then evaluate a self-hosted S3-compatible store (Garage, SeaweedFS or Ceph RGW).
 
+### ADR-010 — On-device storage: plain SQLite with protobuf rows (replaces "Drift" in the architecture doc)
+**Decision:** use `package:sqlite3` (bundles SQLite; MIT). Each table is keyed by id and holds the object's protobuf bytes. The chat store writes through on every change, restores at startup, then catches up with `GetDifference` from the stored pts.
+**Why:** no code generator or ORM layer. The server's protobuf messages are already the data model, so schema changes need no client migrations. Drift can still be adopted if local queries grow complex (e.g. full-text search).
+**Follow-ups:** SQLCipher encryption (launch checklist); local full-text search (FTS5) with the search sprint; SQLite on the web via WebAssembly with the web release.
+
 ### ADR-009 — Client licence policy
 **Decision:** client dependencies must be MIT, BSD, Apache-2.0, MPL-2.0 (file-level copyleft only) or OFL (fonts). GPL, LGPL (where static linking applies) and AGPL are blocked by a CI licence check, added in sprint 1.

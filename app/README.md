@@ -42,7 +42,7 @@ app/
 |---|---|
 | flutter_riverpod | State management |
 | go_router | Navigation |
-| drift + sqlcipher_flutter_libs | Local database (encrypted) |
+| sqlite3 + path_provider | On-device message storage (SQLCipher encryption before launch) |
 | protobuf | Generated messages |
 | web_socket_channel | Transport |
 | firebase_messaging | Push notifications |

@@ -184,6 +184,10 @@ class AuthController extends Notifier<AuthState> {
   void _onRevoked() => _clearLocal();
 
   Future<void> _clearLocal() async {
+    // Nothing from this account may remain on the device after logout.
+    try {
+      (await ref.read(localStoreProvider)).wipe();
+    } catch (_) {}
     ref.invalidate(chatStoreProvider);
     await _store.clear();
     _conn.token = '';

@@ -763,6 +763,102 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'محاولات كثيرة. حاول بعد {minutes, plural, =1{دقيقة واحدة} =2{دقيقتين} few{{minutes} دقائق} other{{minutes} دقيقة}}'**
   String errRateLimitedMinutes(int minutes);
+
+  /// No description provided for @photoMsg.
+  ///
+  /// In ar, this message translates to:
+  /// **'📷 صورة'**
+  String get photoMsg;
+
+  /// No description provided for @fileMsg.
+  ///
+  /// In ar, this message translates to:
+  /// **'📎 {name}'**
+  String fileMsg(String name);
+
+  /// No description provided for @attach.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرفاق'**
+  String get attach;
+
+  /// No description provided for @attachGallery.
+  ///
+  /// In ar, this message translates to:
+  /// **'صورة من المعرض'**
+  String get attachGallery;
+
+  /// No description provided for @attachCamera.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقاط صورة'**
+  String get attachCamera;
+
+  /// No description provided for @attachFile.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملف'**
+  String get attachFile;
+
+  /// No description provided for @captionHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'أضف تعليقاً…'**
+  String get captionHint;
+
+  /// No description provided for @sendPhoto.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال الصورة'**
+  String get sendPhoto;
+
+  /// No description provided for @sendFile.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال الملف'**
+  String get sendFile;
+
+  /// No description provided for @myPhoto.
+  ///
+  /// In ar, this message translates to:
+  /// **'صورتي الشخصية'**
+  String get myPhoto;
+
+  /// No description provided for @photoUpdated.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحديث صورتك'**
+  String get photoUpdated;
+
+  /// No description provided for @openFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد تطبيق على هاتفك لفتح هذا الملف'**
+  String get openFailed;
+
+  /// No description provided for @sizeKb.
+  ///
+  /// In ar, this message translates to:
+  /// **'{n} ك.ب'**
+  String sizeKb(String n);
+
+  /// No description provided for @sizeMb.
+  ///
+  /// In ar, this message translates to:
+  /// **'{n} م.ب'**
+  String sizeMb(String n);
+
+  /// No description provided for @mediaUnavailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم تعد هذه الصورة متاحة'**
+  String get mediaUnavailable;
+
+  /// No description provided for @photoTooBig.
+  ///
+  /// In ar, this message translates to:
+  /// **'الملف كبير جداً'**
+  String get photoTooBig;
 }
 
 class _AppLocalizationsDelegate

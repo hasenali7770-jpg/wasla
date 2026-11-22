@@ -214,7 +214,7 @@ Only then is a code sent: in-app first if the account has a logged-in device, ot
 | Postgres 16 | Everything durable in the MVP | `messages` and `user_updates` are hash-partitioned into 16 partitions with no foreign keys, so they can move to ScyllaDB. Details in [02-data-model.md](02-data-model.md). |
 | Redis 7 | OTP codes, presence, typing, rate-limit buckets, pub/sub routing, short caches | Disposable; no persistence needed |
 | Object storage | Media originals and renditions | Key layout `m/{media_id>>40}/{media_id}/{variant}`; lifecycle rule aborts multipart uploads older than 7 days |
-| Device: SQLite (Drift) | Dialogs, messages, users, outbox, upload state, FTS5 index | Encrypted with SQLCipher; key held in the Keystore/Keychain |
+| Device: SQLite (`package:sqlite3`, ADR-010) | Chats, messages (newest 200 per chat loaded at start), users, outbox, sync position (pts) | Rows hold protobuf bytes, so new fields need no migration. SQLCipher encryption is on the launch checklist. The web build keeps data in memory for now. |
 
 ## 8. Security and abuse
 
@@ -247,7 +247,8 @@ Only then is a code sent: in-app first if the account has a logged-in device, ot
 ```
 features/  (UI: screens, widgets, Riverpod controllers)
    │  watch streams
-core/db   (Drift: the single source of truth for the UI)
+core/chat (ChatStore: state the UI reads; every change is written
+           through to core/storage, SQLite on the device)
    ▲  writes                      ▲ writes
 core/sync (UpdateEngine: pts,     core/outbox (send queue,
  gaps, GetDifference)              retry with backoff, random_id)
@@ -272,7 +273,7 @@ The UI **never** waits on the network to show data. It renders from the local da
 4. Mixed text: set `TextDirection` per message from its first strong character, so English replies inside Arabic chats render correctly. Phone numbers and @usernames are wrapped in LTR isolates (U+2066…U+2069).
 5. Numbers use Western digits by default, with a setting for Eastern Arabic digits (٠١٢٣).
 6. Golden tests render every screen in `ar` (RTL) and `en` (LTR), in light and dark themes.
-7. Font: IBM Plex Sans Arabic (OFL licence) for Arabic, falling back to Inter for Latin text.
+7. Font: Cairo (brand font, OFL licence), bundled with the app; it covers Arabic and Latin.
 
 ## 11. Scaling path
 

@@ -7,6 +7,10 @@
 	handle /readyz {
 		reverse_proxy wasla:8080
 	}
+	# Photo and file uploads/downloads (signed URLs) go straight to storage.
+	handle /wasla-media/* {
+		reverse_proxy s3:8333
+	}
 	# Moderation panel (TOTP login). Staging only; production keeps it on a
 	# separate hostname behind an IP allowlist.
 	handle /admin* {
