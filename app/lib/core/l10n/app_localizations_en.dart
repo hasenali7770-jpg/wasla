@@ -437,4 +437,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoTooBig => 'The file is too large';
+
+  @override
+  String get storageTitle => 'Data and storage';
+
+  @override
+  String get storageUsage => 'Downloaded media on your phone';
+
+  @override
+  String storageUsageValue(int files, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files files',
+      one: '1 file',
+      zero: 'Nothing',
+    );
+    return '$_temp0 · $size';
+  }
+
+  @override
+  String get keepMedia => 'Keep downloaded media';
+
+  @override
+  String get keepMediaHint =>
+      'Downloaded photos and files are removed from your phone after this long since you last opened them. They stay in the chat and download again when opened.';
+
+  @override
+  String get keepDays3 => '3 days';
+
+  @override
+  String get keepDays7 => '1 week';
+
+  @override
+  String get keepDays30 => '30 days (default)';
+
+  @override
+  String get keepForever => 'Forever';
+
+  @override
+  String get clearMedia => 'Clear downloaded media';
+
+  @override
+  String get clearMediaConfirm =>
+      'Delete all downloaded photos and files from this phone? They stay in your chats and can be downloaded again.';
+
+  @override
+  String clearMediaDone(String size) {
+    return 'Freed $size';
+  }
+
+  @override
+  String get clear => 'Clear';
 }

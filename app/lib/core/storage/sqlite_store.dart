@@ -253,8 +253,16 @@ class SqliteStore implements LocalStore {
   void deleteOutgoing(Int64 randomId) => db.execute('DELETE FROM outbox WHERE random_id = ?', [randomId.toInt()]);
 
   @override
+  String? setting(String key) => _kv('setting.$key');
+
+  @override
+  void setSetting(String key, String value) => _setKv('setting.$key', value);
+
+  @override
   void wipe() {
-    db.execute('DELETE FROM kv; DELETE FROM chats; DELETE FROM users; DELETE FROM messages; DELETE FROM outbox;');
+    // Device settings (setting.*) stay; everything about the account goes.
+    db.execute("""DELETE FROM kv WHERE key NOT LIKE 'setting.%'; DELETE FROM chats; DELETE FROM users;
+      DELETE FROM messages; DELETE FROM outbox;""");
   }
 
   @override

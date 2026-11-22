@@ -114,6 +114,9 @@ class MediaCache {
 
   Uint8List? peek(Int64 mediaId, String variant) => _mem[keyOf(mediaId, variant)];
 
+  /// Forgets images held in memory (after "Clear downloaded media").
+  void clearMemory() => _mem.clear();
+
   /// Puts bytes we already have (our own sent photo) so they are not
   /// downloaded again.
   void put(Int64 mediaId, String variant, Uint8List bytes) {

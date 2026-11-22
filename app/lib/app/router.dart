@@ -13,6 +13,7 @@ import '../features/chat/chat_screen.dart';
 import '../features/chats/chats_screen.dart';
 import '../features/chats/new_chat_screen.dart';
 import '../features/settings/sessions_screen.dart';
+import '../features/settings/storage_screen.dart';
 
 /// The login state decides the screen; the router only follows it.
 String? authRedirect(AuthState auth, String location) {
@@ -48,6 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/new-chat', builder: (_, _) => const NewChatScreen()),
       GoRoute(path: '/chat/:id', builder: (_, s) => chatRoute(s)),
       GoRoute(path: '/settings/sessions', builder: (_, _) => const SessionsScreen()),
+      GoRoute(path: '/settings/storage', builder: (_, _) => const StorageScreen()),
     ],
   );
 });

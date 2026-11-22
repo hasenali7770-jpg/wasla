@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 
+import 'media_dir.dart';
 import 'source.dart';
 
 class _FileSource implements UploadSource {
@@ -27,14 +28,23 @@ Future<UploadSource> fileSource(String path) async {
   return _FileSource(f, await f.length());
 }
 
-Future<File> _file(String dir, String name) async {
+Future<Directory> _dir(String dir) async {
   // Outbox files must survive until sent, so they live in app support, not
   // in the cache the OS may clear.
   final base = dir == 'outbox' ? await getApplicationSupportDirectory() : await getApplicationCacheDirectory();
   final d = Directory('${base.path}${Platform.pathSeparator}wasla_$dir');
   await d.create(recursive: true);
-  return File('${d.path}${Platform.pathSeparator}$name');
+  return d;
 }
+
+Future<File> _file(String dir, String name) async =>
+    File('${(await _dir(dir)).path}${Platform.pathSeparator}$name');
+
+Future<CacheUsage> cacheUsage(String dir) async => usageOf(await _dir(dir));
+
+Future<int> sweepCache(String dir, DateTime cutoff) async => sweepDirectory(await _dir(dir), cutoff);
+
+Future<int> clearCache(String dir) async => clearDirectory(await _dir(dir));
 
 Future<String?> saveToCache(String dir, String name, List<int> bytes) async {
   final f = await _file(dir, name);
@@ -55,12 +65,16 @@ Future<String?> streamToCache(String dir, String name, Stream<List<int>> data) a
 
 Future<Uint8List?> readCache(String dir, String name) async {
   final f = await _file(dir, name);
-  return await f.exists() ? f.readAsBytes() : null;
+  if (!await f.exists()) return null;
+  touchFile(f);
+  return f.readAsBytes();
 }
 
 Future<String?> cachedPath(String dir, String name) async {
   final f = await _file(dir, name);
-  return await f.exists() ? f.path : null;
+  if (!await f.exists()) return null;
+  touchFile(f);
+  return f.path;
 }
 
 Future<void> deleteFile(String path) async {

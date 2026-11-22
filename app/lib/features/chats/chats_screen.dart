@@ -118,12 +118,14 @@ class _ChatsScreenState extends ConsumerState<ChatsScreen> {
             onSelected: (v) => switch (v) {
               'saved' => _openSaved(),
               'photo' => _changePhoto(),
+              'storage' => context.push('/settings/storage'),
               _ => context.push('/settings/sessions'),
             },
             itemBuilder: (_) => [
               PopupMenuItem(value: 'photo', child: Text(l.myPhoto)),
               PopupMenuItem(value: 'saved', child: Text(l.savedMessages)),
               PopupMenuItem(value: 'devices', child: Text(l.activeSessions)),
+              PopupMenuItem(value: 'storage', child: Text(l.storageTitle)),
             ],
           ),
         ],

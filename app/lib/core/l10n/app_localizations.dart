@@ -859,6 +859,84 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'الملف كبير جداً'**
   String get photoTooBig;
+
+  /// No description provided for @storageTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'البيانات والتخزين'**
+  String get storageTitle;
+
+  /// No description provided for @storageUsage.
+  ///
+  /// In ar, this message translates to:
+  /// **'الوسائط المحمّلة على هاتفك'**
+  String get storageUsage;
+
+  /// No description provided for @storageUsageValue.
+  ///
+  /// In ar, this message translates to:
+  /// **'{files, plural, =0{لا شيء} =1{ملف واحد} =2{ملفان} few{{files} ملفات} other{{files} ملفاً}} · {size}'**
+  String storageUsageValue(int files, String size);
+
+  /// No description provided for @keepMedia.
+  ///
+  /// In ar, this message translates to:
+  /// **'الاحتفاظ بالوسائط المحمّلة'**
+  String get keepMedia;
+
+  /// No description provided for @keepMediaHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'تُحذف الصور والملفات المحمّلة من هاتفك بعد هذه المدة من آخر فتح لها. تبقى في المحادثة، وتُحمَّل من جديد عند فتحها.'**
+  String get keepMediaHint;
+
+  /// No description provided for @keepDays3.
+  ///
+  /// In ar, this message translates to:
+  /// **'3 أيام'**
+  String get keepDays3;
+
+  /// No description provided for @keepDays7.
+  ///
+  /// In ar, this message translates to:
+  /// **'أسبوع'**
+  String get keepDays7;
+
+  /// No description provided for @keepDays30.
+  ///
+  /// In ar, this message translates to:
+  /// **'30 يوماً (الافتراضي)'**
+  String get keepDays30;
+
+  /// No description provided for @keepForever.
+  ///
+  /// In ar, this message translates to:
+  /// **'دائماً'**
+  String get keepForever;
+
+  /// No description provided for @clearMedia.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح الوسائط المحمّلة'**
+  String get clearMedia;
+
+  /// No description provided for @clearMediaConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف كل الصور والملفات المحمّلة من هذا الهاتف؟ لن تُحذف من المحادثات، ويمكن تحميلها من جديد.'**
+  String get clearMediaConfirm;
+
+  /// No description provided for @clearMediaDone.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحرير {size}'**
+  String clearMediaDone(String size);
+
+  /// No description provided for @clear.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح'**
+  String get clear;
 }
 
 class _AppLocalizationsDelegate

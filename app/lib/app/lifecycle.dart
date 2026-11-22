@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth/auth_controller.dart';
+import '../core/media/media_storage.dart';
 import '../core/net/connection.dart';
 import '../core/providers.dart';
 import '../core/push/push.dart';
@@ -36,6 +37,7 @@ class _AppLifecycleState extends ConsumerState<AppLifecycle> with WidgetsBinding
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _sweepMedia();
     ref.listenManual(authProvider, (_, next) {
       if (next is AuthSignedIn) {
         _startPush();
@@ -53,6 +55,14 @@ class _AppLifecycleState extends ConsumerState<AppLifecycle> with WidgetsBinding
       s.cancel();
     }
     super.dispose();
+  }
+
+  /// Deletes downloaded media past the chosen retention (at most every 6 h).
+  void _sweepMedia() {
+    ref.read(mediaStorageProvider).sweep().catchError((Object e) {
+      debugPrint('media sweep failed ($e)');
+      return 0;
+    });
   }
 
   Future<void> _startPush() async {
@@ -94,6 +104,7 @@ class _AppLifecycleState extends ConsumerState<AppLifecycle> with WidgetsBinding
           conn.close();
         });
       case AppLifecycleState.resumed:
+        _sweepMedia();
         _sleep?.cancel();
         _sleep = null;
         if (_asleep) {

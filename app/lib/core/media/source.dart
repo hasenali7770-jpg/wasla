@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 
+import 'cache_usage.dart';
 import 'source_io_stub.dart' if (dart.library.io) 'source_io.dart' as io;
+
+export 'cache_usage.dart';
 
 /// Bytes to upload. Large files are read part by part, never all at once.
 abstract interface class UploadSource {
@@ -35,3 +38,12 @@ Future<Uint8List?> readCache(String dir, String name) => io.readCache(dir, name)
 Future<String?> cachedPath(String dir, String name) => io.cachedPath(dir, name);
 
 Future<void> deleteFile(String path) => io.deleteFile(path);
+
+/// Size of a cache folder (`media` = downloaded photos and files).
+Future<CacheUsage> cacheUsage(String dir) => io.cacheUsage(dir);
+
+/// Deletes cached files last used before [cutoff]; returns bytes freed.
+Future<int> sweepCache(String dir, DateTime cutoff) => io.sweepCache(dir, cutoff);
+
+/// Deletes every cached file in [dir]; returns bytes freed.
+Future<int> clearCache(String dir) => io.clearCache(dir);

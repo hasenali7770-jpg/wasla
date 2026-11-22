@@ -10,7 +10,7 @@ Everything that must be true before real users are let in. Owner: the person in 
 - [ ] Android release signing key created, backed up offline in two places, and enrolled in Play App Signing. *(owner + engineer)*
 - [ ] Device attestation (Play Integrity) verified server-side; `auth.DevAttestor` removed from production builds. *(engineer)*
 - [x] Encrypt the on-device message database. Done in Sprint 4: SQLite3MultipleCiphers (ChaCha20-Poly1305), random 256-bit key in the Android Keystore / iOS Keychain (ADR-011). *(Claude)*
-- [ ] Decide whether cached photos/files on the phone also need app-level encryption (today they rely on Android's app sandbox and device encryption; ADR-011). *(owner + engineer)*
+- [x] Decided (owner, 22 Nov 2026): for the MVP, downloaded photos/files rely on Android's app sandbox and device encryption. Users can auto-delete them after a chosen period (default 30 days) or clear them at any time in Settings → Data and storage.
 - [ ] External penetration test of the server and app (budgeted, ≈ $5k). *(owner)*
 
 ## Service
@@ -39,3 +39,8 @@ Everything that must be true before real users are let in. Owner: the person in 
 - [ ] Google Play organization account verified (D-U-N-S). *(owner)*
 - [ ] Store listing in Arabic and English: screenshots, description, privacy labels, content rating. *(owner)*
 - [ ] In-app account deletion and report/block verified by a tester who wasn't involved in building it. *(owner)*
+
+
+## After launch
+
+- [ ] Encrypt downloaded photos/files and files waiting to be sent on the phone (app-level encryption, same key approach as ADR-011). *(Claude + engineer)*

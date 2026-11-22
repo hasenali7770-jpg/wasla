@@ -439,4 +439,58 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get photoTooBig => 'الملف كبير جداً';
+
+  @override
+  String get storageTitle => 'البيانات والتخزين';
+
+  @override
+  String get storageUsage => 'الوسائط المحمّلة على هاتفك';
+
+  @override
+  String storageUsageValue(int files, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files ملفاً',
+      few: '$files ملفات',
+      two: 'ملفان',
+      one: 'ملف واحد',
+      zero: 'لا شيء',
+    );
+    return '$_temp0 · $size';
+  }
+
+  @override
+  String get keepMedia => 'الاحتفاظ بالوسائط المحمّلة';
+
+  @override
+  String get keepMediaHint =>
+      'تُحذف الصور والملفات المحمّلة من هاتفك بعد هذه المدة من آخر فتح لها. تبقى في المحادثة، وتُحمَّل من جديد عند فتحها.';
+
+  @override
+  String get keepDays3 => '3 أيام';
+
+  @override
+  String get keepDays7 => 'أسبوع';
+
+  @override
+  String get keepDays30 => '30 يوماً (الافتراضي)';
+
+  @override
+  String get keepForever => 'دائماً';
+
+  @override
+  String get clearMedia => 'مسح الوسائط المحمّلة';
+
+  @override
+  String get clearMediaConfirm =>
+      'حذف كل الصور والملفات المحمّلة من هذا الهاتف؟ لن تُحذف من المحادثات، ويمكن تحميلها من جديد.';
+
+  @override
+  String clearMediaDone(String size) {
+    return 'تم تحرير $size';
+  }
+
+  @override
+  String get clear => 'مسح';
 }
