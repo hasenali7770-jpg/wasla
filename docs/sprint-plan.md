@@ -18,8 +18,8 @@ What is done, what comes next. Each sprint ends in one pull request
 1. ✅ **Upgrade Go to the latest supported version (launch blocker).** Now
    Go 1.27.4, with every dependency on its latest release and all tests
    passing.
-2. Encrypt the on-device message database (SQLCipher; key in Android
-   Keystore).
+2. ✅ **Encrypt the on-device message database.** SQLite3MultipleCiphers,
+   key in the Android Keystore (ADR-011).
 3. Small groups (create, add/remove members, admin roles) in the app.
 4. Push: move from FCM registration tokens to the newer Firebase
    Installation ID registration (`register()` / `onRegistered` in

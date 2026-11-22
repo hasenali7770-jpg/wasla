@@ -9,7 +9,8 @@ Everything that must be true before real users are let in. Owner: the person in 
 - [ ] **Production keys are new and never shared in chat or email:** server SSH keys, `WASLA_CODE_SECRET`, `WASLA_PHONE_PEPPER`, database passwords. Keep them in the cloud provider's secret manager. *(engineer)*
 - [ ] Android release signing key created, backed up offline in two places, and enrolled in Play App Signing. *(owner + engineer)*
 - [ ] Device attestation (Play Integrity) verified server-side; `auth.DevAttestor` removed from production builds. *(engineer)*
-- [ ] Encrypt the on-device message database (SQLCipher, key in Android Keystore / iOS Keychain). *(Claude, Sprint 4)*
+- [x] Encrypt the on-device message database. Done in Sprint 4: SQLite3MultipleCiphers (ChaCha20-Poly1305), random 256-bit key in the Android Keystore / iOS Keychain (ADR-011). *(Claude)*
+- [ ] Decide whether cached photos/files on the phone also need app-level encryption (today they rely on Android's app sandbox and device encryption; ADR-011). *(owner + engineer)*
 - [ ] External penetration test of the server and app (budgeted, ≈ $5k). *(owner)*
 
 ## Service

@@ -73,3 +73,10 @@ flutter:
           weight: 700
         - asset: assets/fonts/Cairo_800ExtraBold.ttf
           weight: 800
+
+# The on-device message database is encrypted (ADR-011): package:sqlite3
+# bundles SQLite3MultipleCiphers instead of plain SQLite.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc

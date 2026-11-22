@@ -45,7 +45,12 @@ Each entry gives the decision, the reason, and the alternative that was rejected
 ### ADR-010 — On-device storage: plain SQLite with protobuf rows (replaces "Drift" in the architecture doc)
 **Decision:** use `package:sqlite3` (bundles SQLite; MIT). Each table is keyed by id and holds the object's protobuf bytes. The chat store writes through on every change, restores at startup, then catches up with `GetDifference` from the stored pts.
 **Why:** no code generator or ORM layer. The server's protobuf messages are already the data model, so schema changes need no client migrations. Drift can still be adopted if local queries grow complex (e.g. full-text search).
-**Follow-ups:** SQLCipher encryption (launch checklist); local full-text search (FTS5) with the search sprint; SQLite on the web via WebAssembly with the web release.
+**Follow-ups:** encryption (done, ADR-011); local full-text search (FTS5) with the search sprint; SQLite on the web via WebAssembly with the web release.
+
+### ADR-011 — On-device encryption: SQLite3MultipleCiphers
+**Decision:** `package:sqlite3` bundles SQLite3MultipleCiphers (`hooks: user_defines: sqlite3: source: sqlite3mc` in `app/pubspec.yaml`) instead of plain SQLite. Its default cipher is ChaCha20-Poly1305. The 256-bit key is random, made on first start, and kept in the Android Keystore / iOS Keychain through `flutter_secure_storage`, never in the app's files. `openEncrypted` (`app/lib/core/storage/sqlite_store.dart`) encrypts an unencrypted database from an older version in place. A file the key can't open (key lost, damage) is deleted and started fresh: it is a cache, and the server holds the chats.
+**Why not SQLCipher:** the package also offers a SQLCipher build. That build links OpenSSL on Android and may ship an older SQLite. SQLite3MultipleCiphers is MIT-licensed, needs no OpenSSL, and follows SQLite releases. It can also read SQLCipher-format files (`PRAGMA cipher`) if that is ever needed.
+**Not covered yet:** downloaded photos and files (`wasla_media` cache) and files waiting to be sent (`wasla_outbox`) are plain files in the app's private storage. Android's per-app sandbox and device encryption protect them. Encrypting them too is a follow-up.
 
 ### ADR-009 — Client licence policy
 **Decision:** client dependencies must be MIT, BSD, Apache-2.0, MPL-2.0 (file-level copyleft only) or OFL (fonts). GPL, LGPL (where static linking applies) and AGPL are blocked by a CI licence check, added in sprint 1.
