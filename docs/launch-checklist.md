@@ -4,7 +4,7 @@ Everything that must be true before real users are let in. Owner: the person in 
 
 ## Security and keys
 
-- [x] **Launch blocker — Go upgraded to the latest supported version.** Done in Sprint 4: Go 1.27.4 (`go.mod`, Dockerfile; CI follows `go.mod`), all dependencies upgraded, full test suite passing. Keep it current: Go supports only the two newest major versions, so plan an upgrade every ~6 months. *(Claude; engineer reviews)*
+- [x] **Launch blocker — Go upgraded to the latest supported version.** Done in Sprint 4: Go 1.27.4 (`go.mod`, Dockerfile; CI follows `go.mod`), all dependencies upgraded, full test suite passing. Keep it current: Go supports only the two newest major versions, so plan an upgrade every ~6 months. CI runs `govulncheck` on every PR and fails it when code we call is affected by a published Go vulnerability. *(Claude; engineer reviews)*
 - [ ] **Replace the staging deploy key** (it was shared in a chat on 18 Nov 2026). Generate a new key pair, update the `STAGING_SSH_KEY` secret and `deploy/staging/cloud-init.yaml` (or `/home/deploy/.ssh/authorized_keys` on the server). *(engineer)*
 - [ ] **Production keys are new and never shared in chat or email:** server SSH keys, `WASLA_CODE_SECRET`, `WASLA_PHONE_PEPPER`, database passwords. Keep them in the cloud provider's secret manager. *(engineer)*
 - [ ] Android release signing key created, backed up offline in two places, and enrolled in Play App Signing. *(owner + engineer)*
