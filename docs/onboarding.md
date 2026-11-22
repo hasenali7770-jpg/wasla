@@ -21,7 +21,7 @@ Welcome. Wasla (وصلة) is a cloud messenger for Iraq: Arabic first, phone-num
 
 ## 2. Run it locally (about 15 minutes)
 
-Requirements: Go 1.24+, Docker, psql, buf. Flutter 3.47.9 is only needed for the app.
+Requirements: Go 1.27+ (`go.mod` pins the toolchain, so an older Go downloads it automatically), Docker, psql, buf. Flutter 3.47.9 is only needed for the app.
 
 Start Postgres, Redis and MinIO:
 
