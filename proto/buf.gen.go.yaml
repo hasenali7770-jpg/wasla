@@ -1,6 +1,6 @@
 version: v2
-# Go code for the backend. Plugin: protoc-gen-go v1.36.6
-#   go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+# Go code for the backend. Plugin: protoc-gen-go v1.36.12
+#   go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
 managed:
   enabled: true
   override:

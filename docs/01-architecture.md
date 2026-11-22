@@ -214,7 +214,7 @@ Only then is a code sent: in-app first if the account has a logged-in device, ot
 | Postgres 16 | Everything durable in the MVP | `messages` and `user_updates` are hash-partitioned into 16 partitions with no foreign keys, so they can move to ScyllaDB. Details in [02-data-model.md](02-data-model.md). |
 | Redis 7 | OTP codes, presence, typing, rate-limit buckets, pub/sub routing, short caches | Disposable; no persistence needed |
 | Object storage | Media originals and renditions | Key layout `m/{media_id>>40}/{media_id}/{variant}`; lifecycle rule aborts multipart uploads older than 7 days |
-| Device: SQLite (`package:sqlite3`, ADR-010) | Chats, messages (newest 200 per chat loaded at start), users, outbox, sync position (pts) | Rows hold protobuf bytes, so new fields need no migration. SQLCipher encryption is on the launch checklist. The web build keeps data in memory for now. |
+| Device: SQLite (`package:sqlite3`, ADR-010) | Chats, messages (newest 200 per chat loaded at start), users, outbox, sync position (pts) | Rows hold protobuf bytes, so new fields need no migration. The file is encrypted (SQLite3MultipleCiphers, key in the Keystore/Keychain; ADR-011). The web build keeps data in memory for now. |
 
 ## 8. Security and abuse
 

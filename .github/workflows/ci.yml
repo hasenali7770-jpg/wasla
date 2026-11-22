@@ -8,7 +8,8 @@ on:
 
 env:
   FLUTTER_VERSION: "3.47.9"
-  PROTOC_GEN_GO: "v1.36.6"
+  PROTOC_GEN_GO: "v1.36.12"
+  GOVULNCHECK: "v1.10.0"
   PROTOC_PLUGIN_DART: "25.1.0"
 
 jobs:
@@ -99,6 +100,13 @@ jobs:
       - name: Unit + integration tests (race detector)
         run: go test -race -count=1 ./...
       - run: go build ./cmd/wasla-server
+      - name: Known vulnerabilities (govulncheck)
+        # Fails the PR if code we actually call is affected by a published Go
+        # vulnerability, in the standard library or a dependency. Fix by
+        # upgrading Go (go.mod toolchain) or the affected module.
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK}
+          govulncheck ./...
       - name: Server Docker image builds
         working-directory: .
         run: docker build -f backend/Dockerfile -t wasla-server:ci .
