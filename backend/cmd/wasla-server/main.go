@@ -32,6 +32,7 @@ import (
 	"wasla/backend/internal/platform/migrate"
 	"wasla/backend/internal/platform/password"
 	"wasla/backend/internal/platform/snowflake"
+	"wasla/backend/internal/push"
 	"wasla/backend/internal/server"
 )
 
@@ -121,11 +122,25 @@ func run(log *slog.Logger, args []string) error {
 	} else {
 		log.Warn("WASLA_S3_ENDPOINT not set: photos and files are disabled")
 	}
+	var pushSender push.Sender
+	switch {
+	case cfg.FCMCredentialsFile != "":
+		fcm, err := push.NewFCMFromFile(cfg.FCMCredentialsFile)
+		if err != nil {
+			return err
+		}
+		log.Info("push notifications on", "firebase_project", fcm.ProjectID())
+		pushSender = fcm
+	case cfg.Env == "dev":
+		pushSender = push.LogSender{Log: log}
+	default:
+		log.Warn("WASLA_FCM_CREDENTIALS_FILE not set: push notifications are disabled")
+	}
 	mediaCfg := media.DefaultConfig()
 	mediaCfg.MaxUploadBytes = cfg.MaxUploadBytes
 
 	srv, err := server.New(ctx, server.Deps{
-		Storage: store, MediaCfg: mediaCfg,
+		Storage: store, MediaCfg: mediaCfg, Push: pushSender,
 		DB: pool, Redis: rdb, Log: log, IDs: ids, SMS: sms, Attestor: attestor, AuthCfg: authCfg,
 		SLA: moderation.DefaultSLA, MinAppVersion: cfg.MinAppVersion, TrustProxy: cfg.TrustProxy,
 		OriginPatterns: cfg.OriginPatterns, SecureCookies: cfg.Env != "dev", AlertWebhookURL: cfg.AlertWebhookURL,
@@ -134,6 +149,7 @@ func run(log *slog.Logger, args []string) error {
 		return err
 	}
 	defer srv.Hub.Close()
+	defer srv.Push.Close()
 	adminHandler, err := srv.AdminHandler()
 	if err != nil {
 		return err

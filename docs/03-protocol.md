@@ -84,6 +84,14 @@ Default compression:
 | Video | 720p H.264, about 1.5 Mbps; "Send as file" sends the original |
 | Voice | Opus at 32 kbps in an OGG container |
 
+## 7a. Push notifications
+
+- After sign-in the app calls `AuthService.RegisterPushToken` (provider FCM) with its Firebase token, and again whenever Firebase issues a new one. A token belongs to one session; logging in elsewhere with the same phone moves it.
+- **When:** the server pushes only when a new message from someone else reached **no connected device** of the user (`PUBLISH` to the user's Redis channel was received by 0 gateways), and the chat is not muted. While a device is connected, updates arrive over the WebSocket instead.
+- **App in the background:** the app disconnects 15 s after going to the background and reconnects (then catches up with `GetDifference`) when it returns. Without that, a hidden app would keep its connection and get no notifications.
+- **Content:** the push carries only `{type: "new_message", chat_id}`. The visible text comes from the app's own resources (`push_title`, `push_new_message`, in the phone's language), so message text and sender names never pass through Google. Pushes for the same chat replace each other (`tag = chat_<id>`).
+- Tokens that FCM reports as unregistered are removed. Servers without `WASLA_FCM_CREDENTIALS_FILE` don't send pushes (dev servers log them).
+
 ## 8. Versioning rules
 
 - Package `wasla.v1`. Adding fields, messages, enum values and RPCs is backward compatible. **Never** renumber or reuse a field; mark removed fields `reserved`.

@@ -28,6 +28,9 @@ type Service struct {
 	DB    *pgxpool.Pool
 	Redis *redis.Client
 	Now   func() time.Time
+	// Offline (optional) receives the updates that reached no connected
+	// device, e.g. to send push notifications.
+	Offline func(userID int64, ups []*pb.Update)
 }
 
 // Append gives each user the next pts and stores update (a template: pts is
@@ -110,7 +113,12 @@ func (s *Service) Publish(ctx context.Context, p Pending) {
 		if err != nil {
 			continue
 		}
-		s.Redis.Publish(ctx, UserChannel(user), b)
+		// PUBLISH answers with the number of gateways subscribed for this
+		// user across all servers: 0 means no device is connected.
+		n, err := s.Redis.Publish(ctx, UserChannel(user), b).Result()
+		if err == nil && n == 0 && s.Offline != nil {
+			s.Offline(user, ups)
+		}
 	}
 }
 
