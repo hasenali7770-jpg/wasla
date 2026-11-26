@@ -13,3 +13,9 @@ Future<Uint8List?> readCache(String dir, String name) async => null;
 Future<String?> cachedPath(String dir, String name) async => null;
 
 Future<void> deleteFile(String path) async {}
+
+Future<CacheUsage> cacheUsage(String dir) async => CacheUsage.empty;
+
+Future<int> sweepCache(String dir, DateTime cutoff) async => 0;
+
+Future<int> clearCache(String dir) async => 0;

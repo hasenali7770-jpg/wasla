@@ -126,5 +126,18 @@
   "sizeKb": "{n} KB",
   "sizeMb": "{n} MB",
   "mediaUnavailable": "This photo is no longer available",
-  "photoTooBig": "The file is too large"
+  "photoTooBig": "The file is too large",
+  "storageTitle": "Data and storage",
+  "storageUsage": "Downloaded media on your phone",
+  "storageUsageValue": "{files, plural, =0{Nothing} =1{1 file} other{{files} files}} · {size}",
+  "keepMedia": "Keep downloaded media",
+  "keepMediaHint": "Downloaded photos and files are removed from your phone after this long since you last opened them. They stay in the chat and download again when opened.",
+  "keepDays3": "3 days",
+  "keepDays7": "1 week",
+  "keepDays30": "30 days (default)",
+  "keepForever": "Forever",
+  "clearMedia": "Clear downloaded media",
+  "clearMediaConfirm": "Delete all downloaded photos and files from this phone? They stay in your chats and can be downloaded again.",
+  "clearMediaDone": "Freed {size}",
+  "clear": "Clear"
 }

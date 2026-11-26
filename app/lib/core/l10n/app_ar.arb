@@ -220,5 +220,35 @@
     }
   },
   "mediaUnavailable": "لم تعد هذه الصورة متاحة",
-  "photoTooBig": "الملف كبير جداً"
+  "photoTooBig": "الملف كبير جداً",
+  "storageTitle": "البيانات والتخزين",
+  "storageUsage": "الوسائط المحمّلة على هاتفك",
+  "storageUsageValue": "{files, plural, =0{لا شيء} =1{ملف واحد} =2{ملفان} few{{files} ملفات} other{{files} ملفاً}} · {size}",
+  "@storageUsageValue": {
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "keepMedia": "الاحتفاظ بالوسائط المحمّلة",
+  "keepMediaHint": "تُحذف الصور والملفات المحمّلة من هاتفك بعد هذه المدة من آخر فتح لها. تبقى في المحادثة، وتُحمَّل من جديد عند فتحها.",
+  "keepDays3": "3 أيام",
+  "keepDays7": "أسبوع",
+  "keepDays30": "30 يوماً (الافتراضي)",
+  "keepForever": "دائماً",
+  "clearMedia": "مسح الوسائط المحمّلة",
+  "clearMediaConfirm": "حذف كل الصور والملفات المحمّلة من هذا الهاتف؟ لن تُحذف من المحادثات، ويمكن تحميلها من جديد.",
+  "clearMediaDone": "تم تحرير {size}",
+  "@clearMediaDone": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "clear": "مسح"
 }

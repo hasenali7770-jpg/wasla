@@ -4,12 +4,13 @@ Everything that must be true before real users are let in. Owner: the person in 
 
 ## Security and keys
 
-- [ ] **Launch blocker — Go upgraded to the latest supported version** (backend `go.mod`, CI, Dockerfile). The backend is on Go 1.24, which no longer gets security fixes; several dependencies (minio-go, x/image, gofakes3) were held back because their newer versions need Go 1.26. Upgrade Go, then those dependencies, and run the full test suite. *(Claude, first task of Sprint 4; engineer reviews)*
+- [x] **Launch blocker — Go upgraded to the latest supported version.** Done in Sprint 4: Go 1.27.4 (`go.mod`, Dockerfile; CI follows `go.mod`), all dependencies upgraded, full test suite passing. Keep it current: Go supports only the two newest major versions, so plan an upgrade every ~6 months. CI runs `govulncheck` on every PR and fails it when code we call is affected by a published Go vulnerability. *(Claude; engineer reviews)*
 - [ ] **Replace the staging deploy key** (it was shared in a chat on 18 Nov 2026). Generate a new key pair, update the `STAGING_SSH_KEY` secret and `deploy/staging/cloud-init.yaml` (or `/home/deploy/.ssh/authorized_keys` on the server). *(engineer)*
 - [ ] **Production keys are new and never shared in chat or email:** server SSH keys, `WASLA_CODE_SECRET`, `WASLA_PHONE_PEPPER`, database passwords. Keep them in the cloud provider's secret manager. *(engineer)*
 - [ ] Android release signing key created, backed up offline in two places, and enrolled in Play App Signing. *(owner + engineer)*
 - [ ] Device attestation (Play Integrity) verified server-side; `auth.DevAttestor` removed from production builds. *(engineer)*
-- [ ] Encrypt the on-device message database (SQLCipher, key in Android Keystore / iOS Keychain). *(Claude, Sprint 4)*
+- [x] Encrypt the on-device message database. Done in Sprint 4: SQLite3MultipleCiphers (ChaCha20-Poly1305), random 256-bit key in the Android Keystore / iOS Keychain (ADR-011). *(Claude)*
+- [x] Decided (owner, 22 Nov 2026): for the MVP, downloaded photos/files rely on Android's app sandbox and device encryption. Users can auto-delete them after a chosen period (default 30 days) or clear them at any time in Settings → Data and storage.
 - [ ] External penetration test of the server and app (budgeted, ≈ $5k). *(owner)*
 
 ## Service
@@ -38,3 +39,8 @@ Everything that must be true before real users are let in. Owner: the person in 
 - [ ] Google Play organization account verified (D-U-N-S). *(owner)*
 - [ ] Store listing in Arabic and English: screenshots, description, privacy labels, content rating. *(owner)*
 - [ ] In-app account deletion and report/block verified by a tester who wasn't involved in building it. *(owner)*
+
+
+## After launch
+
+- [ ] Encrypt downloaded photos/files and files waiting to be sent on the phone (app-level encryption, same key approach as ADR-011). *(Claude + engineer)*

@@ -130,6 +130,10 @@ abstract interface class LocalStore {
   void deleteAllMessages();
   void saveOutgoing(StoredOutgoing o);
   void deleteOutgoing(Int64 randomId);
+  /// Device settings. They survive logout and account switches ([wipe]).
+  String? setting(String key);
+  void setSetting(String key, String value);
+
   void wipe();
   void close();
 }
@@ -163,6 +167,11 @@ class MemoryStore implements LocalStore {
   void saveOutgoing(StoredOutgoing o) {}
   @override
   void deleteOutgoing(Int64 randomId) {}
+  final _settings = <String, String>{};
+  @override
+  String? setting(String key) => _settings[key];
+  @override
+  void setSetting(String key, String value) => _settings[key] = value;
   @override
   void wipe() {}
   @override

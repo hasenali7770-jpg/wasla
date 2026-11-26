@@ -37,7 +37,11 @@ jobs:
         id: cfg
         run: |
           if [ -z "$STAGING_HOST" ] || [ -z "$STAGING_SSH_KEY" ]; then
-            echo "::warning::Staging is not configured yet (secrets STAGING_HOST and STAGING_SSH_KEY). See docs/staging-setup.md."
+            # Not an error: staging is optional until a server exists. The run
+            # ends green and every later step is skipped.
+            echo "::notice::Staging skipped: no server configured yet (secrets STAGING_HOST and STAGING_SSH_KEY). See docs/staging-setup.md."
+            echo "### Staging skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "No staging server is configured yet, so nothing was deployed. Add the secrets STAGING_HOST and STAGING_SSH_KEY (docs/staging-setup.md) to turn deploys on." >> "$GITHUB_STEP_SUMMARY"
             echo "configured=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
