@@ -20,8 +20,8 @@ import (
 // MaxPinned is the number of pinned chats per list (main / archive).
 const MaxPinned = 5
 
-// Service implements the Sprint 2 part of wasla.v1.ChatsService (private
-// chats, Saved Messages and the chat list). Groups land in weeks 11–12.
+// Service implements wasla.v1.ChatsService: private chats, Saved Messages,
+// the chat list and small groups (groups.go). Invite links come later.
 type Service struct {
 	DB      *pgxpool.Pool
 	IDs     IDGen
@@ -37,6 +37,7 @@ func (s *Service) Register(r *rpc.Router) {
 	rpc.Register(r, p+"ClearHistory", rpc.Private, s.ClearHistory)
 	rpc.Register(r, p+"GetChats", rpc.Private, s.GetChats)
 	rpc.Register(r, p+"GetPrivateChat", rpc.Private, s.GetPrivateChat)
+	s.registerGroups(r)
 }
 
 func (s *Service) GetPrivateChat(ctx context.Context, c *rpc.Caller, req *pb.GetPrivateChatRequest) (*pb.GetPrivateChatResponse, error) {

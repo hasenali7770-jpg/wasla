@@ -21,8 +21,8 @@ func TestRouterMatchesProto(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := len(r.Methods()); n != 50 {
-		t.Fatalf("expected 50 methods (Sprint 1-3), got %d", n)
+	if n := len(r.Methods()); n != 57 {
+		t.Fatalf("expected 57 methods (Sprint 1-4: + 7 group methods), got %d", n)
 	}
 }
 
